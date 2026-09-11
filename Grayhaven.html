@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>GRAYHAVEN: AZ UTOLSÓ 12 ÓRA</title>
+<style>
+  :root {
+    --bg-color: #000000;
+    --text-story: #00ff66;
+    --text-blue: #00bfff;
+    --panel-bg: #0a0a0a;
+    --text-red: #ff3333;
+    --text-yellow: #ffff33;
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-story);
+    font-family: 'Courier New', Courier, monospace, sans-serif;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+  }
+
+  #app {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Kijelző / FEJLÉC STÍLUSOK */
+  .hud-panel {
+    position: sticky;
+    top: 10px;
+    z-index: 1000;
+    background-color: rgba(10, 10, 10, 0.95);
+    border: 2px solid var(--text-blue);
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.4);
+    backdrop-filter: blur(5px);
+  }
+
+  .hud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .hud-item {
+    background: rgba(0, 191, 255, 0.05);
+    border: 1px solid var(--text-blue);
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .hud-label {
+    font-size: 0.75em;
+    color: var(--text-blue);
+    text-transform: uppercase;
+    display: block;
+    font-weight: bold;
+  }
+
+  .hud-value {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #ffffff;
+  }
+
+  .hud-value.danger {
+    color: var(--text-red);
+  }
+
+  .hud-info-box {
+    border-top: 1px dashed var(--text-blue);
+    padding-top: 6px;
+    margin-top: 4px;
+    font-size: 0.85em;
+    color: var(--text-yellow);
+  }
+
+  .main-title {
+    color: var(--text-blue);
+    text-align: center;
+    border-bottom: 2px solid var(--text-blue);
+    padding-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .rules-card {
+    background-color: var(--panel-bg);
+    border: 1px solid var(--text-blue);
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
+  }
+
+  .toggle-rules-btn {
+    background: transparent;
+    border: 1px solid var(--text-blue);
+    color: var(--text-blue);
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 4px;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .toggle-rules-btn:hover {
+    background-color: var(--text-blue);
+    color: var(--bg-color);
+  }
+
+  .rules-content {
+    display: none;
+    margin-top: 15px;
+  }
+
+  .chapter-card {
+    display: none;
+    background-color: var(--panel-bg);
+    border: 1px solid var(--text-blue);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
+  }
+
+  .chapter-card.active {
+    display: block;
+  }
+
+  .chapter-title {
+    color: var(--text-blue);
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px dashed var(--text-blue);
+    padding-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  .story-text {
+    color: var(--text-story);
+    white-space: pre-line;
+    margin-bottom: 15px;
+  }
+
+  .loot {
+    color: var(--text-blue);
+    font-weight: bold;
+    background-color: rgba(0, 191, 255, 0.1);
+    padding: 8px 12px;
+    border-left: 3px solid var(--text-blue);
+    margin: 10px 0;
+    white-space: pre-line;
+  }
+
+  .choices {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .choice-btn {
+    background: transparent;
+    border: 1px solid var(--text-blue);
+    color: var(--text-blue);
+    padding: 10px 15px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+
+  .choice-btn:hover {
+    background-color: var(--text-blue);
+    color: var(--bg-color);
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <h1 class="main-title">GRAYHAVEN: AZ UTOLSÓ 12 ÓRA<br><small style="font-size: 0.5em; display: block; margin-top: 5px;">Teljes Lapozós Kalandkönyv</small></h1>
+
+  <!-- DINAMIKUS FEJLÉC (HUD) -->
+  <div class="hud-panel" id="hud">
+    <div class="hud-grid">
+      <div class="hud-item">
+        <span class="hud-label">Karakter</span>
+        <span class="hud-value" id="hud-char">Kiválasztás...</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Életerő (HP)</span>
+        <span class="hud-value" id="hud-hp">--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Lőszer</span>
+        <span class="hud-value" id="hud-ammo">--</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Infekció</span>
+        <span class="hud-value" id="hud-inf">0%</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Információ</span>
+        <span class="hud-value" id="hud-info-count">0</span>
+      </div>
+    </div>
+    <div class="hud-info-box">
+      <strong>TÁSKA / ÁLLAPOTOK:</strong> <span id="hud-inventory">Nincs különleges tárgy</span>
+    </div>
+  </div>
+
+  <!-- Játékszabályok -->
+  <div class="rules-card">
+    <button class="toggle-rules-btn" onclick="toggleRules()">Játékszabályok és Karakterek (Kattints a megnyitáshoz/bezáráshoz)</button>
+    <div class="rules-content" id="rules-content">
+      <div class="chapter-title" style="margin-top: 15px;">Játékszabályok</div>
+      <div class="story-text">A játékhoz egy darab hatoldalú kockára (D6) lesz szükséged (vagy a program automatikusan kezeli a próbákat és harcokat).
+
+1. Karakterek és Induló Értékek:
+- Rendőr: Életerő: 12 | Harcérték: +3 | Lőszer: 12 | Infekció: 0% | Infó: 1 | Felszerelés: Szolgálati fegyver, Golyóálló mellény
+- Laborasszisztens: Életerő: 8 | Harcérték: +0 | Lőszer: 0 | Infekció: 0% | Infó: 4 | Felszerelés: Belépőkártya, Tablet, Fertőtlenítő
+- Újságíró: Életerő: 9 | Harcérték: +1 | Lőszer: 0 | Infekció: 0% | Infó: 3 | Felszerelés: Diktafon, Sajtóigazolvány, Zseblámpa
+
+2. A Harcrendszer és Próbák:
+A program automatikusan kiszámítja a kockadobásokat a választásoknál, és frissíti az adataidat! Tűzfegyver használatakor lőszert használhatsz fel a harcok megnyeréséhez.
+
+3. A Rejtett Infekció Szabálya:
+Bizonyos döntések növelik vagy csökkentik a fertőzöttségedet. Ha a fertőzöttséged eléri vagy meghaladja a 100%-ot, a történet végén elkerülhetetlen Game Over vár rád!</div>
+    </div>
+  </div>
+
+  <!-- Fejezet Konténer (Dinamikusan töltődik) -->
+  <div id="chapter-container"></div>
+</div>
+
+<script>
+// Karakter és játékállapot
+let gameState = {
+  character: null,
+  hp: 0,
+  maxHp: 0,
+  combat: 0,
+  ammo: 0,
+  infection: 0,
+  info: 0,
+  inventory: []
+};
+
+// Fejezetek adatbázisa
+const storyData = {
+  1: {
+    title: "1. FEJEZET",
+    text: `Grayhaven City, hajnali 4:14. A karanténszirénák baljóslatúan üvöltenek a sűrű, fekete füsttel borított égbolt alatt. Az utcákon lángoló járművek roncsaiból árad a korom, a háttérben pedig folyamatos gépfegyverropogás visszhangzik. A távolból szívhasító emberi sikolyok keverednek az elszabadult lények torokhangú hörgésével. A rádióból egy zaklatott, rekedt katonai hang recseg a statikus zajon át: a várost teljesen lezárták, a K-17-es vírus megállíthatatlanul terjed, a hadsereg pedig déli 12:00-kor végleges szőnyegbombázást és fertőtlenítést hajt végre. A másodpercek könyörtelenül peregnek, kevesebb mint nyolc órád van arra, hogy kijuss ebből a földi pokolból. Minden perccel közelebb kerül a megsemmisülés, a döntéseid élet és halál között határoznak.\n\nHol kezded a történetet?`,
+    choices: [
+      { text: "Ha a Rendőr bőrébe bújsz, ugorj a 2. fejezethez.", action: () => selectChar('Rendőr', 12, 3, 12, 0, 1), target: 2 },
+      { text: "Ha a Laborasszisztens vagy, ugorj a 3. fejezethez.", action: () => selectChar('Laborasszisztens', 8, 0, 0, 0, 4), target: 3 },
+      { text: "Ha az Újságírót választod, ugorj a 4. fejezethez.", action: () => selectChar('Újságíró', 9, 1, 0, 0, 3), target: 4 }
+    ]
+  },
+  2: {
+    title: "2. FEJEZET (Rendőr - Őrszoba)",
+    text: `A Belvárosi 4-es Őrszoba szétlőtt, üvegtörmelékes recepcióján állsz. A villódzó neonszerkezet zúgása alig nyomja el az utcáról beszűrődő sikolyokat. A pulton egy hűlő kávéscsésze hever kiborulva, a falakat pedig friss, alvadt vérfoltok borítják. A fegyverraktár vasajtaja félig nyitva áll, de a földön egy véresen hörgő, torz arcú egyenruhás test próbál kétségbeesetten megkapaszkodni a csizmádban. Egykori járőrtársad szemei teljesen elfehéredtek, és csak az éhség hajtja a mozdulatait. A falra szerelt szolgálati rádióban kétségbeesett bejelentések cikáznak a folyami dokkoknál kialakult káoszról és a főpályaudvari lezárt blokádokról.`,
+    choices: [
+      { text: "Ha rálősz a lényre: Vonj le 1 Lőszert, és ugorj az 5. fejezethez.", action: () => modifyStats(0, -1, 0, 0), target: 5 },
+      { text: "Ha megpróbálod elkerülni és átlépsz rajta a garázs felé: Ugorj a 6. fejezethez.", target: 6 }
+    ]
+  },
+  3: {
+    title: "3. FEJEZET (Laborasszisztens - Apex Lab)",
+    text: `Az Apex BioTech alagsori szervertermének jéghideg homályában lázasan gépelsz a konzolon. A képernyő hideg kék fénye megvilágítja verejtékes arcodat, miközben a rendszer lassú haladásjelzőjét figyeled. A monitor képernyőjén lassan töltődnek le a K-17-es mutáció kísérleti adatai és genetikai térképei. A szomszédos kísérleti szobákból átszűrődő kaparászó hangok jelzik, hogy a tesztalanyok kiszabadultak a tárolókból. Hirtelen csikorgó hang hallatszik fentről, és a szellőzőrácsból édeskés, sűrű, sárgás gáz áramlik be a helyiségbe, ami azonnal marja a szemedet és égetni kezdi a torkodat.`,
+    choices: [
+      { text: "Kitartasz az adatok letöltése mellett: Adj hozzá +2 Információt, +15% Infekciót (Rejtett), majd ugorj a 7. fejezethez.", action: () => modifyStats(0, 0, 15, 2), target: 7 },
+      { text: "Azonnal eldobod a panelt és a karbantartó lépcső felé menekülsz: Vonj le 1 Életerőt, és ugorj a 8. fejezethez.", action: () => modifyStats(-1, 0, 0, 0), target: 8 }
+    ]
+  },
+  4: {
+    title: "4. FEJEZET (Újságíró - Szerkesztőség)",
+    text: `A Grayhaven Chronicle elhagyatott, feldúlt irodájában az asztalod alatt húzódsz meg magad, fojtott lélegzettel. A szétszóródott papírlapokat és összetört monitorokat félhomály borítja. A főszerkesztő élettelen, vérbe fagyott teste mellett egy titkos, lepecsételt dosszié hever, amely a kikötői csempészhajók illegális útvonalait tartalmazza. Az ablakon át látod, ahogy a várost elborítja a tűzvész, és a füst felgomolyog az éjszakába. Hirtelen nehéz, csoszogó léptek neszezése és fojtott morgás hallatszik a folyosóról.`,
+    choices: [
+      { text: "Felkapod a dossziét: Adj hozzá +2 Információt, és ugorj a 9. fejezethez.", action: () => modifyStats(0, 0, 0, 2), target: 9 },
+      { text: "Csendben a hátsó vészkijárat felé surransz a kulcsaidért: Ugorj a 10. fejezethez.", target: 10 }
+    ]
+  },
+  5: {
+    title: "5. FEJEZET",
+    text: `A lövés éles hangja végigvisszhangzik a kopár folyosón, és a fertőzött test rekedt hörgéssel terül el a padlón. A csönd visszatér a szobába, de csak egyetlen törékeny másodpercre. Odalépve hozzá, véres zsebéből egy mágneses kulcskártyát húzol ki, ami a tetőtéri rendőrségi helikopterhez ad hozzáférést. A torkolattűz fénye és az dörrenés azonban felhívta rád a figyelmet. Az éles dörrenésre válaszul odakintről üvegtörés zaja és éhes üvöltés szűrődik be: a csorda megindult feléd.`,
+    choices: [{ text: "Ugorj a 11. fejezethez.", target: 11 }]
+  },
+  6: {
+    title: "6. FEJEZET",
+    text: `Gyorsan és óvatosan átlépsz a földön vonagló lényen, majd leszaladsz a nyirkos mélygarázsba. A betonfalak visszaverik a saját szapora lépteid zaját, a levegőben benzin és elégett gumi szaga érződik. Az árnyékok között egy páncélozott járőrkocsi áll, melynek ablakát betörték, de a kulcs még ott lóg a gyújtáskapcsolóban. A jármű karosszériáján karcolások és véres kéznyomok látszanak, de a motor azonnal röffen, ahogy elfordítod a kulcsot. A műszerfal recsegő rádiója szerint a városi körgyűrű még részben járható.`,
+    choices: [{ text: "Ugorj a 12. fejezethez.", target: 12 }]
+  },
+  7: {
+    title: "7. FEJEZET",
+    text: `Az utolsó adatcsomag is sikeresen letöltődik a meghajtóra, de az égető gáz súlyosan megviselte a tüdődet és a légutadat. Vadul köhögsz, miközben a könnytől homályos szemmel próbálsz tájékozódni a sűrű mérgező ködben. A laboratórium szirénázó vészkijárata egy elágazáshoz vezet: az egyik irány lefelé, a sötét föld alatti csatornákba visz, a másik pedig felfelé, a tető felé mutat. Mindkét irányból fenyegető neszek hallatszanak, de a döntést nem halaszthatod tovább.`,
+    choices: [
+      { text: "A csatornák felé indulsz (Hajós ág): +10% Infekció (Rejtett), és ugorj a 13. fejezethez.", action: () => modifyStats(0, 0, 10, 0), target: 13 },
+      { text: "A tető felé mászol (Helikopteres ág): Ugorj a 14. fejezethez.", target: 14 }
+    ]
+  },
+  8: {
+    title: "8. FEJEZET",
+    text: `Kifulladva, vadul verő szívvel éred el az épület szűk karbantartó alagútját. A sötét csövek és vezetékek között botladozva rohansz előre, miközben fojtogató félelem szorítja a mellkasodat. Mögötted a sárgás gáz elszabaduló csápjai kúsznak a csövek mentén, ami még gyorsabb tempóra kényszerít. A tüdődet marja a dohos levegő, minden lépésnél a betonpadló hidegét érzed a talpad alatt. A szűk járat végén végre megpillantod a rozsdás fémkeretet, mely a szabadba vezet. A rozsdás vasajtót benyomva végül kijutsz a ködös, sötét és fenyegetően csendes utcára. A távolban szétlőtt autók és magukra hagyott csomagok hevernek az aszfalton.`,
+    choices: [{ text: "Ugorj a 15. fejezethez.", target: 15 }]
+  },
+  9: {
+    title: "9. FEJEZET",
+    text: `A dossziét gyorsan a kabátod alá rejtve kilépsz a folyosóra, de a semmiből hirtelen egy torz arcú, agresszív civil fertőzött ront rád véres kézzel! Ruhája szét van tépve, szemeiben pedig tébolyult, állatias éhség ég. A roham kivédésére alig marad egyetlen másodperced.\n\nHarci teszt a civil ellen (Ereje: 2).`,
+    choices: [
+      { text: "Indítsd el a harcot!", action: () => resolveCombat(2, 2, 15, 15), target: null }
+    ]
+  },
+  10: {
+    title: "10. FEJEZET",
+    text: `Óvatosan oldalazva eléred a mélygarázst, ahol rábukkansz a szerkesztőség matricázott cégautójára. A garázs sötét zugaiból nyöszörgés hallatszik, de az autó még sértetlennek tűnik. A kulcsok zsebben, az jármű indítható. Berakod a táskádat az ülésre, és felkészülsz a veszélyes útra.`,
+    choices: [{ text: "Ugorj a 12. fejezethez.", target: 12 }]
+  },
+  11: {
+    title: "11. FEJEZET",
+    text: `A földszinti ablakok berobbannak, a horda feltartóztathatatlanul árad be az épületbe. A lények egymást taposva tülekednek a szűk ajtórésen át. Nincs más választásod, mint elbarikádozni a lenti ajtót, és felfelé rohanni a lépcsőházban a tető irányába. A lépcsőfokok csúszósak a vértől, mögötted pedig már kaparásznak a körmök a fém korláton.`,
+    choices: [{ text: "Ugorj a 14. fejezethez.", target: 14 }]
+  },
+  12: {
+    title: "12. FEJEZET (Körgyűrű - Autó)",
+    text: `A gázra lépve behajtasz a városi körgyűrűre. A motor bőgése visszhangzik a falak között, ahogy megpróbálsz utat vágni az elhagyott kocsik erdejében. A látvány kaotikus: a forgalom teljesen bedugult, a pánikba esett sofőrök egymásnak hajtva, dudálva és taposva próbálnak kijutni a városból. Az út szélén elhagyott mentőautók villognak céltalanul, a tömeg pedig kétségbeesetten rohan a kerítések felé.`,
+    choices: [
+      { text: "Megpróbálod kikerülni a dugót a szűk, sötét mellékutcákon át: Ugorj a 16. fejezethez.", target: 16 },
+      { text: "Türelmesen araszolsz a főúton a határ felé: Ugorj a 17. fejezethez.", target: 17 }
+    ]
+  },
+  13: {
+    title: "13. FEJEZET (Csatorna - Hajó felé)",
+    text: `Leereszkedsz a sötét, bűzös csatornahálózatba. A szag szinte elviselhetetlen, a levegő nehéz és nyirkos. Térdig érő, hideg, gyanús folyadékban gázolsz. A nyirkos téglafalakon furcsa, rikító színű, lüktető gombatelepek növögetnek. A víz alól időnként névtelen uszadékok és elmerült tárgyak ütköznek a lábadnak.`,
+    choices: [
+      { text: "Óvatosan, a falaktól és a gombáktól távol haladsz a sodrás közepén: Ugorj a 18. fejezethez.", target: 18 },
+      { text: "Sietsz a sötétben, és megcsúszol a fertőzött, nyálkás iszapban: +15% Infekció (Rejtett), és ugorj a 18. fejezethez.", action: () => modifyStats(0, 0, 15, 0), target: 18 }
+    ]
+  },
+  14: {
+    title: "14. FEJEZET (Skyview Tető - Helikopter)",
+    text: `Kivágod a tetőre vezető nehéz ajtót, és felérsz a szeles magaslatra. Az éjszakai hideg szél azonnal az arcadba csap, miközben a város feletti füstfellegek kavarognak. A helikopter rotorjai már forognak, a pilóta integet és kiabál a nyitott ajtóból a hajtóműzajban. A leszállópálya szélén elhagyott csomagok és katonai felszerelések hevernek szétszórva.`,
+    choices: [
+      { text: "Azonnal odafutsz és beugrasz a helikopterbe: Ugorj a 19. fejezethez.", target: 19 },
+      { text: "Még gyorsan átkutatod a tetőtéri biztonsági irodát (+1 Információ): Ugorj a 19. fejezethez.", action: () => modifyStats(0, 0, 0, 1), target: 19 }
+    ]
+  },
+  15: {
+    title: "15. FEJEZET (Az utca sötétje)",
+    text: `Kijutottál az utcára, ahol a füst és a köd szinte teljesen elnyeli a közvilágítás maradékát. A távolban gépfegyverek száraz kopogása és robbanások morajlása rázza meg a talajt. Két fontos helyszín körvonalazódik a távolban: a Központi Gyógyszertár romjai vagy a Metró aluljáró sötét lejárója, ami a folyó felé vezethet. Választanod kell, mielőtt egy kósza fertőzött csorda rád talál.`,
+    choices: [
+      { text: "A Gyógyszertár felé mész: Ugorj a 20. fejezethez.", target: 20 },
+      { text: "A Metró aluljáróba ereszkedsz le: Ugorj a 13. fejezethez.", target: 13 }
+    ]
+  },
+  16: {
+    title: "16. FEJEZET",
+    text: `A szűk, elhagyatott mellékutcákban hirtelen egy fegyveres fosztogatókból álló csapat ugrik ki az árnyékból, elállva az autód útját. Rögtönzött barikádokat emeltek elhasznált hordókból és bútorokból. Fenyegetően emelik fel csőre töltött fegyvereiket, és ordítva követelik az értékeidet.`,
+    choices: [
+      { 
+        text: "Ha Rendőr vagy és van lőszered (elhasználsz 1-et): A lövésre elrettenve elugranak, ugorj a 17. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Rendőr' && gameState.ammo >= 1) {
+            modifyStats(0, -1, 0, 0);
+            goToChapter(17);
+          } else {
+            alert("Nincs lőszered vagy nem te vagy a Rendőr!");
+          }
+        },
+        target: null
+      },
+      { text: "Ha nincs lőszered vagy más karakter vagy: Bekerítenek és megkopasztanak (Veszítesz 2 Életerőt), de továbbengednek. Ugorj a 17. fejezethez.", action: () => modifyStats(-2, 0, 0, 0), target: 17 }
+    ]
+  },
+  17: {
+    title: "17. FEJEZET",
+    text: `Eléred az autópálya-felhajtó szakaszt. Az aszfaltot kiégett roncsok és szétszóródott lőszeres hüvelyek borítják. A távolban már világítanak a katonai ellenőrzőpont hatalmas fényszórói, és szögesdróttal lezárt kordonok látszanak. A páncélozott járművek mögött felfegyverzett katonák alakjai körvonalazódnak a reflektorfényben.`,
+    choices: [
+      { text: "Ugorj az 51. fejezethez.", target: 51 },
+      { text: "Térj vissza a városba: ugorj a 15. fejezethez.", target: 15 }
+    ]
+  },
+  18: {
+    title: "18. FEJEZET",
+    text: `A csatorna alagútjának végén megpillantod a folyami kompok távoli fényeit. A friss levegő éles kontrasztot alkot a föld alatti bűzzel, de a víz felszínén olajfoltok úsznak. Egy elhagyatott, rozsdás raktár létrája vezet fel a dokkok szintjére. A magasból gépek zúgása és a víz csapkodása hallatszik.`,
+    choices: [{ text: "Ugorj a 71. fejezethez.", target: 71 }]
+  },
+  19: {
+    title: "19. FEJEZET",
+    text: `A helikopter zúgva elrugaszkodik a tetőtől. A gép megbillen a szélben, ahogy szélsebesen emelkedni kezd a felhőkarcolók fölé. Ahogy magasba emelkedtek, eléd tárul a lángoló, kivilágított Grayhaven drámai képe, ami lassan zsugorodni kezd alattad. A várost borító füst tengeréből robbanások narancssárga villanásai törnek elő.`,
+    choices: [{ text: "Ugorj a 61. fejezethez.", target: 61 }]
+  },
+  20: {
+    title: "20. FEJEZET (Központi Gyógyszertár)",
+    text: `A gyógyszertár védőrácsát felfeszítették, a kirakat üvege darabokban hever. A széttört gyógyszeres dobozok és elszórt kötszerek borítják a padlót. A sötét belső térben egy polgári túlélő, Anna lapul egy pult mögött, akinek a lábán egy csúnya, üszkösnek tűnő seb éktelenkedik. Kétségbeesetten szorít egy elmosódott képet a családjáról, miközben halkan zokog.`,
+    choices: [
+      { 
+        text: "Megosztod vele a fertőtlenítődet / bekötözöd (+1 Információ, -10% Infekció): Ugorj a 21. fejezethez.", 
+        action: () => {
+          if (!hasState('GYÓGYSZERTÁR_KIFOSZTVA')) {
+            addState('GYÓGYSZERTÁR_KIFOSZTVA');
+            modifyStats(0, 0, -10, 1);
+          }
+        }, 
+        target: 21 
+      },
+      { 
+        text: "Magára hagyod, és átkutatod a polcokat kötszerekért (+2 Életerő gyógyulás, ha nem üres): Ugorj a 21. fejezethez.", 
+        action: () => {
+          if (hasState('GYÓGYSZERTÁR_KIFOSZTVA')) {
+            alert("A polcok teljesen üresek, korábban már kifosztottad!");
+          } else {
+            addState('GYÓGYSZERTÁR_KIFOSZTVA');
+            modifyStats(2, 0, 0, 0);
+          }
+        }, 
+        target: 21 
+      }
+    ]
+  },
+  21: {
+    title: "21. FEJEZET (Kereszteződés a gyógyszertár után)",
+    text: `Kilépsz a kifosztott gyógyszertárból a füstös, hideg hajnalba. Az utca túloldalán elhagyott mentőautó villog némán. Az utca végén a Grayhaven Kórház hatalmas, sötét tömbje magasodik, ahonnan szirénázás és fegyverropogás visszhangzik. Jobbra egy katonai kordon látszik. A levegőben terjedő égett szag jelzi, hogy a város gyorsan pusztul.`,
+    choices: [
+      { text: "A Kórház felé veszed az irányt: Ugorj a 22. fejezethez.", target: 22 },
+      { text: "A Katonai Ellenőrzőpont felé indulsz: Ugorj a 23. fejezethez.", target: 23 },
+      { text: "Meguntad a gyaloglást, és visszamész járművet keresni (Autós ág): Ugorj a 12. fejezethez.", target: 12 }
+    ]
+  },
+  22: {
+    title: "22. FEJEZET (Grayhaven Kórház - Sürgősségi)",
+    text: `A kórház sürgősségi fogadócsarnoka leírhatatlan mészárszékre hasonlít. Felborult hordágyak, vértócsák és eldobott orvosi műszerek borítják a kövezetet. A karanténosztály vastag vasajtaja nyitva áll, és egy fertőzött ápoló vonszolja feléd a lábát véres köpenyben. Szájából sziszegő hangok törnek elő, miközben feléd nyúl élesre kopott körmeivel.\n\nHarci teszt az ápoló ellen (Ereje: 3).`,
+    choices: [
+      { 
+        text: "Ha Rendőr vagy és lősz (-1 Lőszer): Azonnal nyersz!", 
+        action: () => {
+          if (gameState.character === 'Rendőr' && gameState.ammo >= 1) {
+            modifyStats(0, -1, 0, 0);
+            alert("Lövéssel azonnal legyőzted!");
+            goToChapter(24);
+          } else {
+            alert("Nem vagy Rendőr vagy nincs lőszered!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Kockadobásos harc (Ereje: 3)", action: () => resolveCombat(3, 2, 24, 24, 10), target: null }
+    ]
+  },
+  23: {
+    title: "23. FEJEZET (Katonai Kordon)",
+    text: `Egy elhagyatott, szétlőtt katonai poszthoz érsz. A homokzsákok szétnyíltak, a földet elhagyott sisakok és gázálarcok borítják. A homokzsákok mögött fekvő halott tiszt rádiója még üzemel és sziszeg. A parancsnokság hangja a folyami evakuációt említi, de egyben teljes légtérzárat is hirdet. A recsegő adásból megtudod, hogy az utolsó hajó hamarosan kifut.`,
+    choices: [
+      { text: "Hallgatsz a rádióadásra és jegyzetelsz: Adj hozzá +1 Információt, és ugorj a 25. fejezethez.", action: () => modifyStats(0, 0, 0, 1), target: 25 },
+      { 
+        text: "Átkutatod a tiszt holttestét: (Rendőrként +3 Lőszer, másként +10% Infekció). Ugorj a 25. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Rendőr') {
+            modifyStats(0, 3, 0, 0);
+          } else {
+            modifyStats(0, 0, 10, 0);
+          }
+        }, 
+        target: 25 
+      }
+    ]
+  },
+  24: {
+    title: "24. FEJEZET",
+    text: `Az ápoló holtan terül el. A csend gyorsan visszatér a véres fogadócsarnokba. A pulton meglátsz egy orvosi mesterkulcsot, amivel eléred a szigorúan őrzött gyógyszerraktárt vagy a mentőliftet. A kulcskártya megcsillan a vészvilágítás gyenge fényében.`,
+    choices: [
+      { text: "A gyógyszerraktárba mész ellenszer után kutatni: Ugorj a 26. fejezethez.", target: 26 },
+      { text: "A mentőhelikopter leszállójához mész a tetőre (Helikopteres ág): Ugorj a 14. fejezethez.", target: 14 }
+    ]
+  },
+  25: {
+    title: "25. FEJEZET",
+    text: `A kordon mögül hirtelen egy elszabadult, páncélozott katonai dzsip gördül ki, de a vezetője magatehetetlenül borul a kormányra – a jármű egyenesen feléd száguld! A motor üvölt, a kerekek csikorognak a törmeléken. Nincs időd gondolkodni, azonnal cselekedned kell.`,
+    choices: [
+      { 
+        text: "Félreugrasz (Állóképesség-próba: 1D6-tal 3 vagy több kell)", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          if (roll >= 3) {
+            alert(`Sikeres kitérés! Dobásod: ${roll}`);
+          } else {
+            alert(`Sikertelen kitérés! Dobásod: ${roll}. Veszítesz 3 Életerőt.`);
+            modifyStats(-3, 0, 0, 0);
+          }
+          goToChapter(27);
+        }, 
+        target: null 
+      }
+    ]
+  },
+  26: {
+    title: "26. FEJEZET",
+    text: `A gyógyszerraktár polcain kutatsz. Az elhagyott fiókokban orvosi fecskendők és kémcsövek hevernek szétszórva. Ha Laborasszisztens vagy, azonnal felismered a K-17 vakcina kísérleti prototípusát: csökkentheted a rejtett Infekciódat -25%-kal. Ha más karakter vagy, csak erős fertőtlenítőt találsz (-10% Infekció). A dobozokat gyorsan a táskádba rejtve felkészülsz a továbblépésre.`,
+    choices: [
+      { 
+        text: "A hátsó alagsori kijáraton át a folyó felé indulsz: Ugorj a 13. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Laborasszisztens') {
+            modifyStats(0, 0, -25, 0);
+          } else {
+            modifyStats(0, 0, -10, 0);
+          }
+        }, 
+        target: 13 
+      }
+    ]
+  },
+  27: {
+    title: "27. FEJEZET",
+    text: `A füstölgő dzsipből egy sérült katona, Vance őrmester mászik ki. Nehéz légzéssel dől a felborult jármű oldalának. Véres a vállízülete, de szorosan fog egy távcsöves puskát, és fontos hírei vannak a dokkokról. Szemeiből látszik, hogy már nem bírja sokáig segítség nélkül.`,
+    choices: [
+      { text: "Segítesz Vance-nek bekötözni a sebét: Adj hozzá +2 Információt, és ugorj a 28. fejezethez.", action: () => modifyStats(0, 0, 0, 2), target: 28 },
+      { 
+        text: "Elveszed tőle a fegyvert: (Rendőrként +2 Lőszer, másként +1 Információ). Ugorj a 28. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Rendőr') {
+            modifyStats(0, 2, 0, 0);
+          } else {
+            modifyStats(0, 0, 0, 1);
+          }
+        }, 
+        target: 28 
+      }
+    ]
+  },
+  28: {
+    title: "28. FEJEZET",
+    text: `Vance utolsó erejével elárulja, hogy a 4-es folyami dokknál horgonyzó hajó az egyetlen esély, de a zsilipkapuk megragadtak. Megrázza a fejét, és figyelmeztet a vízi út veszélyeire is. Köhögve szorítja meg a kezedet, mielőtt összeesne.`,
+    choices: [
+      { text: "Elindulsz a dokkok felé a folyóparton (Hajós ág): Ugorj a 71. fejezethez.", target: 71 },
+      { text: "Inkább a városközponti autópálya felé fordulsz: Ugorj az 51. fejezethez.", target: 51 }
+    ]
+  },
+  29: {
+    title: "29. FEJEZET (Központi Park)",
+    text: `A városon átvágva belépsz a Központi Parkba. A magas fák árnyékot vetnek a feldúlt sétányokra, ahol magára hagyott babakocsik és padok hevernek. A fák között kísérteties köd ül, a bokrok mélyéről pedig furcsa, kattogó torokhangok hallatszanak. Minden lépésnél óvatosnak kell lenned, nehogy eláruld a pozíciódat.`,
+    choices: [
+      { text: "Csendben, lopakodva, árnyékról árnyékra haladsz: Ugorj a 30. fejezethez.", target: 30 },
+      { text: "Átszaladsz a nyílt, kivilágítatlan sétányon: Ugorj a 31. fejezethez.", target: 31 }
+    ]
+  },
+  30: {
+    title: "30. FEJEZET",
+    text: `A lopakodás meghozza a gyümölcsét: észrevétlenül kerülsz ki egy nagyobb fertőzött csordát. Látod, ahogy a sötétben céltalanul bolyonganak a kiszáradt szökőkút körül. A fűben találsz egy elhagyott hátizsákot, benne hasznos túlélőfelszereléssel. Csendben átnézed a tartalmát, majd továbblépsz.`,
+    choices: [{ text: "Ugorj a 32. fejezethez.", target: 32 }]
+  },
+  31: {
+    title: "31. FEJEZET",
+    text: `A lépted zaja felveri a környéket! A száraz gallyak ropogása azonnal felkelti a ragadozó figyelmét. A sötétből egy riasztóan gyors, mutálódott fertőzött veti rá magát a sétányra! Hosszú végtagjai és torz arca van, ahogy egyenesen feléd száguld.\n\nHarci teszt a mutáns ellen (Ereje: 4).`,
+    choices: [
+      { 
+        text: "Rendőrként 2 lőszert választhatsz a biztos győzelemhez!", 
+        action: () => {
+          if (gameState.character === 'Rendőr' && gameState.ammo >= 2) {
+            modifyStats(0, -2, 0, 0);
+            alert("2 lőszer felhasználásával biztosan legyőzted!");
+            goToChapter(32);
+          } else {
+            alert("Nem vagy Rendőr vagy nincs elég lőszered!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Kockadobásos harc (Ereje: 4)", action: () => resolveCombat(4, 3, 32, 32, 20), target: null }
+    ]
+  },
+  32: {
+    title: "32. FEJEZET",
+    text: `Kijutsz a parkból. A kőkerítésen átlépve végre újra a betonozott úton állsz. Előtted a Skyview Torony hatalmas, üveg borítású épülete magasodik. A csúcsán még világítanak a helikopter leszállópályájának fényei. A szél leszakított szórólapokat hord az üres utcán.`,
+    choices: [
+      { text: "Feljutsz a toronyba (Helikopteres ág): Ugorj a 61. fejezethez.", target: 61 },
+      { text: "Inkább a föld alatti metrót választod (Hajós ág): Ugorj a 13. fejezethez.", target: 13 }
+    ]
+  },
+  33: {
+    title: "33. FEJEZET (A Metró Aluljáró sötétje)",
+    text: `Ahogy leérsz a metróállomás lépcsőjén, hirtelen kialszik az összes lámpa. A fémkorlát hideg a kezed alatt, a mélyből pedig hűvös huzat áramlik fel. A koromsötétben csak a zseblámpád vékony fénysugara vág át a homályon. Odalent az elhagyott jegypénztárak kísértetiesen hallgatnak.`,
+    choices: [
+      { text: "Bekapcsolod a lámpát: Meglátod a síneket, de a fény felriaszt valamit a sötétben. Ugorj a 34. fejezethez.", target: 34 },
+      { text: "Vaksötétben tapogatózol a nyirkos fal mentén: +10% Infekciót (Rejtett), de csendben maradsz. Ugorj a 35. fejezethez.", action: () => modifyStats(0, 0, 10, 0), target: 35 }
+    ]
+  },
+  34: {
+    title: "34. FEJEZET",
+    text: `A felvillanó fény megriaszt egy kétségbeesett, őrjöngő túlélőt, aki kést rántva rátok ront! Szemeiben vad rettegés ég, és nem hallgat a józan szóra. A szűk peronon alig van helyed kitérni a vágások elől.\n\nLefegyverzed (Harci teszt, Ereje: 2).`,
+    choices: [
+      { text: "Indítsd el a harcot!", action: () => resolveCombat(2, 1, 35, 35, 0, 1), target: null }
+    ]
+  },
+  35: {
+    title: "35. FEJEZET",
+    text: `A sínek mentén óvatosan haladva eléred a folyó alatti karbantartó alagutat, ami egyenesen a dokkokhoz vezet. A sínek közötti tócsák visszaverik a távoli jelzőlámpák gyenge fényét. A levegő egyre nedvesebb, jelezve, hogy már a vízszint alatt jársz.`,
+    choices: [{ text: "Ugorj a 71. fejezethez.", target: 71 }]
+  },
+  36: {
+    title: "36. FEJEZET (Katonai Blokád a Főtéren)",
+    text: `A Főtéren egy elhagyatott tank és összetört lőszeres rekeszek állnak. A szökőkút tönkrement, az épületek homlokzatát golyónyomok borítják. A városi hangszórókból hideg gép hang számlál vissza: „Még 4 óra a végső tisztításig.” A fémes hang baljósan visszhangzik az üres téren.`,
+    choices: [
+      { 
+        text: "Átkutatod a katonai rekeszeket (Rendőrként +4 Lőszer, Újságíróként +2 Infó): Ugorj a 37. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Rendőr') modifyStats(0, 4, 0, 0);
+          if (gameState.character === 'Újságíró') modifyStats(0, 0, 0, 2);
+        }, 
+        target: 37 
+      }
+    ]
+  },
+  37: {
+    title: "37. FEJEZET",
+    text: `A ládák mögül hirtelen páncélozott katonai zombik törnek elő, akiken még ott lóg a védőfelszerelés! Nehéz rohamsisakjuk és golyóálló mellényük miatt rendkívül ellenállóak. Lépteik alatt megrázkódik a kőburkolat.\n\nHarci teszt a páncélozott zombik ellen (Ereje: 5).`,
+    choices: [
+      { 
+        text: "Rendőrként 2 lőszer felhasználásával átütöd a páncéljukat!", 
+        action: () => {
+          if (gameState.character === 'Rendőr' && gameState.ammo >= 2) {
+            modifyStats(0, -2, 0, 0);
+            alert("Átütötted a páncéljukat a lőszerrel!");
+            goToChapter(38);
+          } else {
+            alert("Nem vagy Rendőr vagy nincs 2 lőszered!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Kockadobásos harc (Ereje: 5)", action: () => resolveCombat(5, 3, 38, 38, 15), target: null }
+    ]
+  },
+  38: {
+    title: "38. FEJEZET",
+    text: `Kimenekülsz a főtéri csapdából. Lihegve támaszkodsz meg egy utcatáblánál, miközben a veszély lassan alábbhagy. Két fő irány marad előtted. Választanod kell a két eltérő menekülési útvonal között.`,
+    choices: [
+      { text: "Az északi alagút felé mész (Autós ág): Ugorj az 51. fejezethez.", target: 51 },
+      { text: "A déli ipari negyed és a csatornák felé mész (Hajós ág): Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  39: {
+    title: "39. FEJEZET (A Kórházi Alagsor)",
+    text: `Leereszkedsz a kórház nyirkos, bonctani alagsorába, ahol fertőtlenítő és rothadás szaga keveredik. A mennyezeti csövekből monoton módon csöpög a víz a betonra. A villódzó fények kísérteties árnyékokat rajzolnak a falakra.`,
+    choices: [
+      { text: "Óvatosan átlépsz a fém hűtőrekeszek előtt: Ugorj a 40. fejezethez.", target: 40 },
+      { text: "Megvizsgálod a boncasztalon hagyott kísérleti jegyzőkönyveket: Adj hozzá +2 Információt, de +15% Infekciót (Rejtett). Ugorj a 40. fejezethez.", action: () => modifyStats(0, 0, 15, 2), target: 40 }
+    ]
+  },
+  40: {
+    title: "40. FEJEZET",
+    text: `Az alagsori ablakon kimászva a kórház hátsó parkolójában találod magad. A hideg éjszakai levegő azonnal kitisztítja a tüdődet. Egy járó motorú mentőautó áll ott. A jármű ajtajai félig nyitva vannak, hívogatóan várva a vezetőjét.`,
+    choices: [
+      { text: "Beülsz a mentőbe (Autós ág): Ugorj az 51. fejezethez.", target: 51 },
+      { text: "Gyalog mész a folyópart felé (Hajós ág): Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  41: {
+    title: "41. FEJEZET (A Rádiótorony)",
+    text: `Egy helyi adótorony betört ajtajú épületéhez érsz, ahol még zúg a tartalék generátor. A pultokon elhagyott mikrofonok és szikrázó műszerek hevernek. A falon lévő térképek a sugárzási zónákat mutatják.`,
+    choices: [
+      { text: "Vészjelzést adsz le (+1 Információ, de a zaj vonzza a fertőzötteket): Ugorj a 42. fejezethez.", action: () => modifyStats(0, 0, 0, 1), target: 42 },
+      { text: "Átnézed a generátorszobát üzemanyagért: Ugorj a 43. fejezethez.", target: 43 }
+    ]
+  },
+  42: {
+    title: "42. FEJEZET",
+    text: `A rádiózás után egy fertőzött technikus ront berakni az irodába! Munkásruhája véres, kezében egy nehéz franciakulcsot lóbál megvakult dühében. Nem hagy időt arra, hogy felkészülj a védekezésre.\n\nHarci teszt a technikus ellen (Ereje: 2).`,
+    choices: [
+      { text: "Indítsd el a harcot!", action: () => resolveCombat(2, 2, 43, 43), target: null }
+    ]
+  },
+  43: {
+    title: "43. FEJEZET",
+    text: `A toronyból kilépve látod, hogy az ég alja már vöröslik a közeledő hajnalban. A távoli horizonton gomolyog a lángoló városszél füstje. Az időd fogytán. Minden eltelt perccel csökken az esélyed a túlélésre.`,
+    choices: [
+      { text: "Az északi autópálya felé indulsz (Autós ág): Ugorj az 51. fejezethez.", target: 51 },
+      { text: "A raktárváros és a folyó felé mész (Hajós ág): Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  44: {
+    title: "44. FEJEZET (A Feketepiaci Bunker)",
+    text: `Egy megerősített pinceajtóra bukkansz, amit egy túlélő kereskedő, Leo nyit meg. A rés mögül egy éber szempár és egy puskacső mered rád. Odabent konzervdobozok és lőszeres ládák sorakoznak a polcokon.`,
+    choices: [
+      { text: "Vásárolsz tőle lőszert vagy elsősegélyt (+2 Lőszer / +2 HP): Ugorj a 45. fejezethez.", action: () => modifyStats(2, 2, 0, 0), target: 45 },
+      { text: "Ha nem üzletelsz, Leo becsapja az ajtót: Ugorj a 45. fejezethez.", target: 45 }
+    ]
+  },
+  45: {
+    title: "45. FEJEZET",
+    text: `Leo megemlíti, hogy a Skyview Toronynál katonai mozgást látott. Int az ujjával, hogy óvatosan haladj azon a környéken. Elköszönsz tőle, és kilépsz a nyirkos sikátorba.`,
+    choices: [
+      { text: "A helikopter felé mész (Helikopteres ág): Ugorj a 61. fejezethez.", target: 61 },
+      { text: "A folyópart felé indulsz (Hajós ág): Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  46: {
+    title: "46. FEJEZET (A Laboratóriumi Kutatóbusz)",
+    text: `Egy felborult Apex BioTech-es mobil laboratóriumot találsz. Az oldalára döntött jármű szélvédője betört, odabent törött kémcsövek hevernek. Ha Laborasszisztens vagy, értékes mintákat szerzel (+2 Információ, -10% Infekció). A vegyszerek szaga csípi az orrodat, miközben átszitálod a roncsokat.`,
+    choices: [
+      { 
+        text: "Folytatás a 47. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Laborasszisztens') modifyStats(0, 0, -10, 2);
+        }, 
+        target: 47 
+      }
+    ]
+  },
+  47: {
+    title: "47. FEJEZET",
+    text: `A kutatóbusz riasztója felsikolt, felverve a környéket. Az éles villogás és a fülsiketítő sziréna elárasztja az utcát. A környező épületekből baljós morgás válaszol a zajra.`,
+    choices: [
+      { text: "Elmenekülsz a főút felé (Autós ág): Ugorj az 51. fejezethez.", target: 51 },
+      { text: "A csatornába ugrasz (Hajós ág): Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  48: {
+    title: "48. FEJEZET (A Katonai Ellenőrző Pont - Második opció)",
+    text: `Elhagyott gépfegyverfészkek között kutatsz. A homokzsákok mögött elszórt felszerelést találsz a szétlőtt állásokban. A szél halkan fütyül a fémállványok között.`,
+    choices: [
+      { 
+        text: "Kutatás: Rendőrként +4 Lőszer, Újságíróként +2 Infó. Ugorj a 49. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Rendőr') modifyStats(0, 4, 0, 0);
+          if (gameState.character === 'Újságíró') modifyStats(0, 0, 0, 2);
+        }, 
+        target: 49 
+      }
+    ]
+  },
+  49: {
+    title: "49. FEJEZET",
+    text: `A fal mögött az autópálya vezet kifelé. A végtelennek tűnő betoncsík a távolba veszik a szürke ködben. El kell döntened, merre folytatod a menekülést.`,
+    choices: [
+      { text: "Járművel hajtasz az autópályára (Autós ág): Ugorj az 51. fejezethez.", target: 51 },
+      { text: "Visszafordulsz a folyóhoz: Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  50: {
+    title: "50. FEJEZET (A Pánikoló Tömeg)",
+    text: `Egy aluljáróban kétségbeesett túlélők rohannak szembe veled. Gyerekek és felnőttek sikoltozva próbálnak kijutni a szűk folyosóról. A pánik eluralkodott mindenkin, ahogy egymást tapossák a kijárat felé.`,
+    choices: [
+      { 
+        text: "Próbálod tartani a pozíciód (1D6-tal 3 vagy több kell)", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          if (roll >= 3) {
+            alert(`Sikerült megállnod! Dobásod: ${roll}`);
+            goToChapter(43);
+          } else {
+            alert(`Elsodort a tömeg! Dobásod: ${roll}. Veszítesz 2 Életerőt.`);
+            modifyStats(-2, 0, 0, 0);
+            goToChapter(21);
+          }
+        }, 
+        target: null 
+      }
+    ]
+  },
+  51: {
+    title: "51. FEJEZET (AZ AUTÓS ÚTVONAL - A Főútvonal)",
+    text: `Rátérsz a 6-os főútra. A sávok teljesen eldugultak a roncsoktól. Kifosztott buszok és összetört személyautók képeznek nepáthatatlan gátat. A távolból fenyegető füstoszlopok emelkednek az égre.`,
+    choices: [
+      { text: "Nyomva tartod a dudát és gázolsz a roncsok közt: Ugorj az 52. fejezethez.", target: 52 },
+      { text: "Kiszállsz, és gyalog folytatod a leállósávon: Ugorj az 53. fejezethez.", target: 53 }
+    ]
+  },
+  52: {
+    title: "52. FEJEZET",
+    text: `A kocsid hűtője felrobban a lökdösődésben, a motor leáll. Fehér gőz áramlik ki a gépháztető alól, ahogy a jármű magatehetetlenül megáll. A zajra az elhagyott autók mögül torz alakok emelkednek ki.\n\nHarci teszt a rád rontó sofőr-zombik ellen (Ereje: 3).`,
+    choices: [
+      { text: "Indítsd el a harcot!", action: () => resolveCombat(3, 2, 53, 53), target: null }
+    ]
+  },
+  53: {
+    title: "53. FEJEZET",
+    text: `Eléred a 6-os alagút bejáratát és a nehéz katonai blokádot. Homokzsákokból emelt sáncok és páncélozott járművek zárják el az utat. A katonák fegyvereiket rád szegezik, és nem tűrik a közeledést.`,
+    choices: [
+      { 
+        text: "Ha nálad van legalább 4 Információ ÉS Újságíró vagy: Megpróbálod felmutatni a bizonyítékokat.", 
+        action: () => {
+          if (gameState.character === 'Újságíró' && gameState.info >= 4) {
+            goToChapter(54);
+          } else {
+            alert("Nem rendelkezel elég információval vagy nem Újságíró vagy!");
+          }
+        }, 
+        target: null 
+      },
+      { 
+        text: "Ha megpróbálod fegyverrel áttörni (Rendőrként, ha van legalább 4 Lőszered):", 
+        action: () => {
+          if (gameState.character === 'Rendőr' && gameState.ammo >= 4) {
+            goToChapter(55);
+          } else {
+            alert("Nincs elég lőszered vagy nem vagy Rendőr!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Ha feladod, és megpróbálsz visszaszökni a folyóhoz: Ugorj a 71. fejezethez.", target: 71 }
+    ]
+  },
+  54: {
+    title: "54. FEJEZET",
+    text: `A katonák haboznak, de a parancsnok rád förmed a fertőzésveszély miatt. Felemeli a kezét, és parancsot ad a fegyverek feltöltésére. Semmilyen bizonyíték nem érdekli őket ebben a káoszban.`,
+    choices: [{ text: "Ugorj az 56. fejezethez.", target: 56 }]
+  },
+  55: {
+    title: "55. FEJEZET",
+    text: `Tűzharcba kezdesz a katonai blokáddal, de esélyed sincs a nehézgépfegyver ellen. A golyók záporoznak a fedezéked körül, szétzúzva a betont. A túlerő azonnal felmorzsolja a próbálkozásodat.`,
+    choices: [{ text: "Ugorj az 56. fejezethez.", target: 56 }]
+  },
+  56: {
+    title: "56. FEJEZET (GAME OVER - Az Autós Csapda csúcspontja)",
+    text: `A katonai blokádon nincs átjutás. A katonák tüzet nyitnak, vagy a mögötted feltorlódó fertőzött tömeg tapos el. A csapda bezárult, nincs menekvés. GAME OVER.`,
+    choices: [{ text: "Újrajáték az 1. fejezetből", action: () => resetGame(), target: 1 }]
+  },
+  57: {
+    title: "57. FEJEZET (Üzemanyag-keresés)",
+    text: `A benzinkút elhagyatott kútoszlopai között óvatosan lépkedsz, felkészülve a legrosszabbra. A levegőt sűrű üzemanyagszag tölti be. A kút mögötti sötét tárolóban végül találsz egy tele kanna benzint. Gyorsan elrakod a kannát, megigazítod a felszerelésedet, és visszasietel az úthoz.`,
+    choices: [{ text: "Ugorj az 51. fejezethez.", target: 51 }]
+  },
+  58: {
+    title: "58. FEJEZET",
+    text: `A szűk sikátor mélyén egy rejtett zsoldos lép ki a fémkerítés mögül, és óvatosan tippet ad a lezárt alagutakról (+1 Információ). Gondosan elteszed a vázlatot a táskádba.`,
+    choices: [{ text: "Ugorj az 51. fejezethez.", action: () => modifyStats(0, 0, 0, 1), target: 51 }]
+  },
+  59: {
+    title: "59. FEJEZET",
+    text: `A rádió szerint a déli hidakat lebombázták. A recsegő katonai adásban egymást követik a vészjelzések. Ez a csapás végleg elvágja a szárazföldi menekülési lehetőségeket a déli irányban.`,
+    choices: [
+      { text: "Visszafordulsz a dokkok felé: Ugorj a 71. fejezethez.", target: 71 },
+      { text: "Kitartasz az autó mellett: Ugorj az 51. fejezethez.", target: 51 }
+    ]
+  },
+  60: {
+    title: "60. FEJEZET",
+    text: `A műszerfal fényei erőtlenül pislákolnak, majd az akkumulátor lemerül. Újra és újra ráadod a gyújtást, s a motor végül köhögve beindul. Nagy gázt adsz, és folytatod az utat.`,
+    choices: [{ text: "Ugorj az 51. fejezethez.", target: 51 }]
+  },
+  61: {
+    title: "61. FEJEZET (A HELIKOPTERES ÚTVONAL - Skyview Torony)",
+    text: `Belépsz a Skyview Torony márványos recepciójára. Az üvegablakok betörtek, a padlón törmelék szóródott szét. Fentről rotorok csapkodása hallatszik.`,
+    choices: [
+      { 
+        text: "Nekivágsz a lépcsőháznak (1D6 teszt: 3 vagy több kell)", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          if (roll >= 3) {
+            alert(`Sikeres feljutás! Dobásod: ${roll}`);
+          } else {
+            alert(`Megcsúsztál a lépcsőn! Dobásod: ${roll}. Veszítesz 2 Életerőt.`);
+            modifyStats(-2, 0, 0, 0);
+          }
+          goToChapter(62);
+        }, 
+        target: null 
+      },
+      { 
+        text: "Felülbírálod a liftáramkört (Laborasszisztensként):", 
+        action: () => {
+          if (gameState.character === 'Laborasszisztens') {
+            goToChapter(63);
+          } else {
+            alert("Csak a Laborasszisztens képes áthidalni az áramkört!");
+          }
+        }, 
+        target: null 
+      }
+    ]
+  },
+  62: {
+    title: "62. FEJEZET",
+    text: `Eléred a 20. emeleti pihenőt, ahol túlélők kérnek segítséget. Az elbarikádozott ajtó mögül kétségbeesett dörömbölés hallatszik.`,
+    choices: [
+      { text: "Betöröd az ajtót (+1 Információ, -1 Életerő): Ugorj a 64. fejezethez.", action: () => modifyStats(-1, 0, 0, 1), target: 64 },
+      { text: "Továbbmászol: Ugorj a 64. fejezethez.", target: 64 }
+    ]
+  },
+  63: {
+    title: "63. FEJEZET",
+    text: `A lift megáll a 25. emeleten, a szellőzőn át kell kimásznod. A szűk fémalagútban nehezen kapsz levegőt.`,
+    choices: [
+      { text: "Ügyesen kimászol: Ugorj a 64. fejezethez.", target: 64 },
+      { text: "Megcsúszol a létrán: Vonj le 2 Életerőt, ugorj a 64. fejezethez.", action: () => modifyStats(-2, 0, 0, 0), target: 64 }
+    ]
+  },
+  64: {
+    title: "64. FEJEZET",
+    text: `Eléred a tetőterasz magánhelikopterét. A szél vadul tépi a ruhádat, ahogy a kifutó szélére lépsz. A gép hajtóműve már üvölt, készen az felszállásra.`,
+    choices: [
+      { text: "Azonnal beugrasz: Ugorj a 65. fejezethez.", target: 65 },
+      { text: "Megmented a pilótát egy őrtől (Harci teszt, Ereje: 3): Ugorj a 65. fejezethez.", action: () => resolveCombat(3, 0, 65, 65), target: null }
+    ]
+  },
+  65: {
+    title: "65. FEJEZET",
+    text: `A helikopter felemelkedik a felhőkarcolók fölé. A város égő romjai kiterülnek alatta. A pilóta bólint egyet, de az arca gyanúsan sápadt.`,
+    choices: [{ text: "Ugorj a 66. fejezethez.", target: 66 }]
+  },
+  66: {
+    title: "66. FEJEZET",
+    text: `A pilóta szeme elfehéredik – rejtett fertőzött volt! Hirtelen rád rántja a botkormányt, mire a gép veszélyesen megdől a levegőben. A pánik eluralkodik a pilótafülkében.\n\nLekötözöd (Harci teszt, Ereje: 4).`,
+    choices: [
+      { text: "Küzdj meg vele!", action: () => resolveCombat(4, 0, 67, 67), target: null }
+    ]
+  },
+  67: {
+    title: "67. FEJEZET (GAME OVER - A Helikopteres Csapda)",
+    text: `Egy katonai légvédelmi rakéta telibe találja a helikoptert. A gép robbanás kíséretében zuhanni kezd a mélybe. A küldetés itt véget ér. GAME OVER.`,
+    choices: [{ text: "Újrajáték az 1. fejezetből", action: () => resetGame(), target: 1 }]
+  },
+  68: {
+    title: "68. FEJEZET",
+    text: `Meggondoltad magad a tetőn: Visszafordulsz a lépcsőkön, és a föld alatti kijáratot választod. Ugorj a 71. fejezethez.`,
+    choices: [{ text: "Ugorj a 71. fejezethez.", target: 71 }]
+  },
+  69: {
+    title: "69. FEJEZET",
+    text: `Visszatérsz a kiinduló szintre, hogy megkeresd a csatornahálózatot.`,
+    choices: [{ text: "Ugorj a 71. fejezethez.", target: 71 }]
+  },
+  70: {
+    title: "70. FEJEZET",
+    text: `A föld alatti menekülési útvonal felé veszed az irányt.`,
+    choices: [{ text: "Ugorj a 71. fejezethez.", target: 71 }]
+  },
+  71: {
+    title: "71. FEJEZET (A HAJÓS ÚTVONAL - A Folyami Raktárak)",
+    text: `Felkapaszkodva eléred a 4-es számú folyami raktárvidék elhagyatott dokjait. A víz sötéten örvénylik a mólók lábánál. A köd átláthatatlanul borul a rozsdás konténerekre.`,
+    choices: [
+      { text: "A nyílt mólón haladsz: Ugorj a 72. fejezethez.", target: 72 },
+      { text: "A raktárak belsejében lopakodsz: Ugorj a 73. fejezethez.", target: 73 }
+    ]
+  },
+  72: {
+    title: "72. FEJEZET",
+    text: `A mólón fegyveres konténert találsz. A nehéz vasajtó félig nyitva maradt. Belül hasznos kincsek lapulnak a sötétben.`,
+    choices: [
+      { 
+        text: "Kutatás: Rendőrként +3 Lőszer, Újságíróként +2 Információ. Ugorj a 74. fejezethez.", 
+        action: () => {
+          if (gameState.character === 'Rendőr') modifyStats(0, 3, 0, 0);
+          if (gameState.character === 'Újságíró') modifyStats(0, 0, 0, 2);
+        }, 
+        target: 74 
+      }
+    ]
+  },
+  73: {
+    title: "73. FEJEZET",
+    text: `A raktárban munkás-fertőzöttek kutatnak. A sötét sarkokból hörgés és fémes csikorgás hallatszik. Megérzik a jelenlétedet, és elindulnak feléd.\n\nHarci teszt a munkások ellen (Ereje: 4).`,
+    choices: [
+      { text: "Indítsd el a harcot!", action: () => resolveCombat(4, 2, 74, 74), target: null }
+    ]
+  },
+  74: {
+    title: "74. FEJEZET",
+    text: `A dokk szélén egy mutálódott, hatalmas dokkmunkás-főnök áll. Teste kétszeresére duzzadt a vírustól, kezében nehéz vasláncot forgat. Elállja az utat a főrámpa előtt.`,
+    choices: [
+      { text: "Megküzdesz vele: Harci teszt a Mutáns Főnök ellen (Ereje: 5).", action: () => resolveCombat(5, 3, 75, 75), target: null },
+      { text: "Elkerülöd a harcot, és a raktárnegyeden keresztül keresel kerülőutat a naszádhoz: Ugorj a 101. fejezethez.", target: 101 }
+    ]
+  },
+  75: {
+    title: "75. FEJEZET",
+    text: `A fedélzeten vagy! A zsilipkapu automata vezérlője villog. A víz nyomása alatt ropognak a tartóláncok. Sietned kell, mielőtt a zsilip végleg lezárul.`,
+    choices: [
+      { 
+        text: "Ha van kódkártyád vagy legalább 4 Információd: Felülbírálod a zsilipkaput.", 
+        action: () => {
+          if (gameState.info >= 4 || hasState('CSATORNA_KULCS')) {
+            goToChapter(76);
+          } else {
+            alert("Nincs kódkártyád és nincs elég információstatisztikád!");
+          }
+        }, 
+        target: null 
+      },
+      { 
+        text: "Kézzel küzdesz a lánccal (1D6 teszt: 3 vagy több kell)", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          if (roll >= 3) {
+            alert(`Sikerült kiszabadítani a láncot! Dobásod: ${roll}`);
+          } else {
+            alert(`Nehezen, de kiszabadítottad! Dobásod: ${roll}`);
+          }
+          goToChapter(76);
+        }, 
+        target: null 
+      }
+    ]
+  },
+  76: {
+    title: "76. FEJEZET",
+    text: `A naszád teljes gázzal a folyami torkolat felé lő ki. A hajtóművek felbőgnek, maga mögött hagyva a lángoló dokkokat. A víz habot vet a hajó faránál.`,
+    choices: [{ text: "Ugorj a 96. fejezethez.", target: 96 }]
+  },
+  77: {
+    title: "77. FEJEZET",
+    text: `Kevés lehetőség van a kikötő gátjához eljutni. A vízparti raktárak között sötét alakok barangolnak: fertőzöttek egy csoportja állja el az utat.`,
+    choices: [
+      { text: "Ha harcolni akarsz velük, lépj a 78. fejezetre.", target: 78 },
+      { text: "Ha inkább próbálsz elosonni a vízelvezető csatornában, lépj a 79. fejezetre.", target: 79 }
+    ]
+  },
+  78: {
+    title: "78. FEJEZET",
+    text: `Két lassú, de agresszív fertőzött támad rád a sötétből!\nKét fertőzött | Harcérték: 6 | Életerő: 8\n\n(Ha győzöl: +2 Lőszer).`,
+    choices: [
+      { text: "Küzdj meg velük!", action: () => resolveCombat(6, 2, 80, 80, 0, 0, 2), target: null }
+    ]
+  },
+  79: {
+    title: "79. FEJEZET",
+    text: `A bűzös csatorna szűk, a szag elviselhetetlen. Ahogy a sötétben tapogatózol, a fertőzött nyálka hozzáér a nyílt sebeidhez (+1% Infekció). Végül kijutsz a gát melletti rakpartra.`,
+    choices: [{ text: "Lépj a 80. fejezetre.", action: () => modifyStats(0, 0, 1, 0), target: 80 }]
+  },
+  80: {
+    title: "80. FEJEZET",
+    text: `Egy elhagyatott őrbódéhoz érsz a molólépcsőnél. Az asztalon egy katonai elsősegélydoboz és egy elejtett rádió hever.`,
+    choices: [
+      { 
+        text: "Ha van legalább 3 Infó pontod: megérted a kódolt adást (+1 Infó).", 
+        action: () => {
+          if (gameState.info >= 3) {
+            modifyStats(0, 0, 0, 1);
+            alert("Sikeresen megértetted az adást! (+1 Infó)");
+          } else {
+            alert("Nincs elég Infó pontod!");
+          }
+        }, 
+        target: 81 
+      },
+      { text: "Ha nincs elég Infó pontod: a dobozból kötszert veszel magadhoz (+3 Életerő).", action: () => modifyStats(3, 0, 0, 0), target: 81 }
+    ]
+  },
+  81: {
+    title: "81. FEJEZET",
+    text: `A kikötőállomás betonplaccán egy fegyveres fertőzött őr bolyong. Bár a tudata elhomályosult, a kezében lévő gépkarabélyt még mindig lóbálja.\n\nFertőzött őr | Harcérték: 8 | Életerő: 10`,
+    choices: [
+      { text: "Küzdj meg az őrrel! (+3 Lőszer, -20% Infekció a szérumból)", action: () => resolveCombat(8, 2, 82, 82, -20, 0, 3), target: null }
+    ]
+  },
+  82: {
+    title: "82. FEJEZET",
+    text: `A kikötői stéghez érve észreveszed,hogy a vízre vezető főkapu zárva van, és egy elektronikus kódzár védi.`,
+    choices: [
+      { 
+        text: "Ha a lapodra fel van írva a [CSATORNA_KULCS] vagy rendelkezel legalább 4 Infó ponttal: Könnyedén feltöröd a rendszert.", 
+        action: () => {
+          if (hasState('CSATORNA_KULCS') || gameState.info >= 4) {
+            goToChapter(84);
+          } else {
+            alert("Nincs kulcsod és nincsen 4 infó pontod sem!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Kénytelen vagy elkerülő utat keresni a veszélyes stégszakaszon át: Lépj a 83. fejezetre.", target: 83 }
+    ]
+  },
+  83: {
+    title: "83. FEJEZET",
+    text: `A korhadt deszkák beszakadnak a lábad alatt, és beleesel a kikötő fertőzött, zöldes vizébe. Mire kievickélsz a túlsó oldalon, az elfertőződött víz eléri a szervezetedet (+20% Infekció). Gyengén, de átjutottál a túloldalra.`,
+    choices: [{ text: "Lépj a 84. fejezetre.", action: () => modifyStats(0, 0, 20, 0), target: 84 }]
+  },
+  84: {
+    title: "84. FEJEZET",
+    text: `A móló végében egy motoros teherhajó horgonyoz. A fedélzeten lámpafény ég, a motor halkan durog – úgy tűnik, a hajó indulásra kész, de a személyzetnek nyoma sincs. A mólón két irányba indulhatsz:`,
+    choices: [
+      { text: "Kutasd át a kikötőmester irodáját pótalkatrészekért és üzemanyagért: Lépj a 85. fejezetre.", target: 85 },
+      { text: "Ne pazarold az időt, lépj azonnal a fedélzetre: Lépj a 86. fejezethez.", target: 86 }
+    ]
+  },
+  85: {
+    title: "85. FEJEZET",
+    text: `A kikötőmester irodája fel van forgatva, de az egyik fiók mélyén találsz egy működő jelzőrakétát és egy adag gyógyszert (+2 Életerő, megkapod a [JELZŐRAKÉTA] állapotot). Zörejeket hallasz a hátad mögül, ezért gyorsan távozol.`,
+    choices: [
+      { 
+        text: "Lépj a 86. fejezetre.", 
+        action: () => {
+          addState('JELZŐRAKÉTA');
+          modifyStats(2, 0, 0, 0);
+        }, 
+        target: 86 
+      }
+    ]
+  },
+  86: {
+    title: "86. FEJEZET",
+    text: `A teherhajó fedélzetére lépsz. A hajó lassan ring a sötét vízen, a motor alapjáraton mormog. A parancsnoki híd felől furcsa, kaparászó zajokat hallasz, míg a gépház felől fojtott gőz sziszeg.`,
+    choices: [
+      { text: "Ha bemész a parancsnoki hídra megtisztítani az utat: Lépj a 87. fejezetre.", target: 87 },
+      { text: "Ha leereszkedsz a gépházba megnézni a motort: Lépj a 88. fejezetre.", target: 88 }
+    ]
+  },
+  87: {
+    title: "87. FEJEZET",
+    text: `A parancsnoki híd üvegablakai be vannak törve. A kormánykerékre borulva a hajó kapitánya ül – vagy ami megmaradt belőle. Ahogy közelebb lépsz, hirtelen megmozdul és feléd ront!\n\nFertőzött kapitány | Harcérték: 8 | Életerő: 9`,
+    choices: [
+      { text: "Küzdj meg a kapitánnyal! (+2 Lőszer, +1 Infó)", action: () => resolveCombat(8, 2, 89, 89, 0, 1, 2), target: null }
+    ]
+  },
+  88: {
+    title: "88. FEJEZET",
+    text: `A gépházban forró gőz süvít egy elpattant csőből. A sötétben feltűnik egy alak: a hajógépész, aki már teljesen átadta magát a fertőzésnek, és egy nehéz franciakulccsal támad rád.\n\nFertőzött gépész | Harcérték: 7 | Életerő: 11\n(A szűk hely miatt a harcban nem használhatsz lőfegyvert!)`,
+    choices: [
+      { text: "Küzdj meg a gépésszel! (+3 Életerő)", action: () => resolveCombat(7, 2, 89, 89, 0, 0, 0, 3), target: null }
+    ]
+  },
+  89: {
+    title: "89. FEJEZET",
+    text: `Megszerzed az irányítást a teherhajó felett, és eloldod a tartóköteleket. A hajó lassan elválik a mólótól és megindul a folyó közepe felé. Az ég alja vörösen izzik a lángoló várostól. Ahogy a sodrásba érsz, a radar egy akadályt jelez a folyószakaszon: a katonai vízi zárlatot.`,
+    choices: [
+      { 
+        text: "Ha rendelkezel legalább 4 Infó ponttal (vagy megszerezted a kódokat a kapitánytól): Lépj a 90. fejezetre.", 
+        action: () => {
+          if (gameState.info >= 4) {
+            goToChapter(90);
+          } else {
+            alert("Nincs elég információd!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Ha nincs elég információd a kódokról: Lépj a 91. fejezetre.", target: 91 }
+    ]
+  },
+  90: {
+    title: "90. FEJEZET",
+    text: `Beütöd a megfelelő felismerő kódokat a hajó rádiójába. A katonai blokád automatikus védelmi rendszere leengedje a vízi láncot, így a teherhajó sértetlenül halad át a záróvonalon.`,
+    choices: [{ text: "Lépj a 92. fejezetre.", target: 92 }]
+  },
+  91: {
+    title: "91. FEJEZET",
+    text: `Kódok hiányában a zárlat automatikus gépágyúi tüzet nyitnak a teherhajóra! A repeszek behatolnak a kormányműbe és megrongálják a fedélzetet.`,
+    choices: [
+      { 
+        text: "Dobj egy kockával az elszenvedett sérülésért!", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          alert(`A repeszek eltaláltak! Veszítesz ${roll} Életerőt.`);
+          modifyStats(-roll, 0, 0, 0);
+          goToChapter(92);
+        }, 
+        target: null 
+      }
+    ]
+  },
+  92: {
+    title: "92. FEJEZET",
+    text: `A gát mögötti folyószakaszon a hajó fenekéből kaparászást hallasz. Egy korábban elrejtőzött fertőzött mászik fel a fedélzeti nyíláson!\n\nElrejtőzött fertőzött | Harcérték: 7 | Életerő: 8`,
+    choices: [
+      { 
+        text: "Ha van nálad [JELZŐRAKÉTA], azonnal kilőheted rá: a harc elmarad!", 
+        action: () => {
+          if (hasState('JELZŐRAKÉTA')) {
+            alert("A jelzőrakétával azonnal a vízbe lőtted a fertőzöttet!");
+            goToChapter(93);
+          } else {
+            alert("Nincs jelzőrakétád!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Harc a fertőzött ellen", action: () => resolveCombat(7, 2, 93, 93), target: null }
+    ]
+  },
+  93: {
+    title: "93. FEJEZET",
+    text: `A hajó kiér a városi zónából, a folyóparti erdők szegélyezte csendes szakaszra. A hajó patikájában találsz néhány érintetlen orvosi szert.`,
+    choices: [
+      { 
+        text: "Kezelés felvétele az állapotod alapján:", 
+        action: () => {
+          if (gameState.infection >= 40) {
+            alert("A fertőtlenítővel csökkentetted a fertőzésedet (-20% Infekció)!");
+            modifyStats(0, 0, -20, 0);
+          } else {
+            alert("Elláttad a sebeidet (+2 Életerő)!");
+            modifyStats(2, 0, 0, 0);
+          }
+          goToChapter(94);
+        }, 
+        target: null 
+      }
+    ]
+  },
+  94: {
+    title: "94. FEJEZET",
+    text: `A teherhajó eléri a karanténzóna külső határát jelző biztonsági kikötőt. A parti őrség és az orvosi csapatok fényszórói rászegeződnek a hajóra. Megszólal a hangszóró: „Azonnal dobja el a fegyvereit és lépjen a mólóra orvosi vizsgálatra!”`,
+    choices: [{ text: "Lépj a 95. fejezetre.", target: 95 }]
+  },
+  95: {
+    title: "95. FEJEZET",
+    text: `Kilépsz a teherhajó fedélzetéről a biztonsági zóna mólójára. A katonák körbevesznek, az orvosi stáb pedig elkezdi az állapotod felmérését és a fertőzöttségi szinted elemzését. Ezzel elérted a menekülési útvonal végét.`,
+    choices: [{ text: "Lépj a 96. fejezetre (Végső számvetés).", target: 96 }]
+  },
+  96: {
+    title: "96. FEJEZET (A VÉGSŐ SZÁMVETÉS – A Hajó fedélzetén)",
+    text: `A hajó csendben szeli a nyílt vizet, távol a lángoló várostól. Nézd meg a Infekciód százalékát és az Információid számát! Eredményeid alapján dől el az emberiség és a te sorsod.`,
+    choices: [
+      { 
+        text: "Kiértékelés megtekintése", 
+        action: () => {
+          if (gameState.infection >= 100) {
+            goToChapter(97);
+          } else if (gameState.info < 3) {
+            goToChapter(98);
+          } else if (gameState.character !== 'Laborasszisztens') {
+            goToChapter(99);
+          } else {
+            goToChapter(100);
+          }
+        }, 
+        target: null 
+      }
+    ]
+  },
+  97: {
+    title: "97. FEJEZET (GAME OVER – A Rejtett Fertőzés Áldozata)",
+    text: `A vírus a tenger közepén veszi át az irányítást az elméd felett. Szemed elhomályosul, testfeletti uralmad megszűnik. A fedélzeten lévők már nem tudnak segíteni rajtad. GAME OVER.`,
+    choices: [{ text: "Újrajáték az 1. fejezetből", action: () => resetGame(), target: 1 }]
+  },
+  98: {
+    title: "98. FEJEZET (RÉSZLEGES TÚLÉLÉS – A Névtelen Menekült)",
+    text: `Megmenekültél, de bizonyíték híján senki sem hisz neked. A hatóságok karanténba zárnak, a tragédia valódi okai pedig örökre rejtve maradnak. Egyedül éled le az életedet a történtek árnyékában. RÉSZLEGES GYŐZELEM.`,
+    choices: [{ text: "Újrajáték az 1. fejezetből", action: () => resetGame(), target: 1 }]
+  },
+  99: {
+    title: "99. FEJEZET (TELJES GYŐZELEM – Az Igazság Hírnöke)",
+    text: `A bizonyítékokkal leleplezed a rendszert és a vírust. Az összegyűjtött adatok bejárják a világos sajtót, felszínre hozva az igazságot. Hősként tisztelnek a túlélők. GRATULÁLUNK, NYERTÉL!`,
+    choices: [{ text: "Újrajáték az 1. fejezetből", action: () => resetGame(), target: 1 }]
+  },
+  100: {
+    title: "100. FEJEZET (LEGENDÁS VÉGZET – A Vakcina Kulcsa)",
+    text: `A teljes genetikai adatokkal te mented meg az emberiséget. A laboratóriumi minták segítségével sikerül kifejleszteni az ellenszert, megállítva a globális katasztrófát. Neved bevonul a történelemkönyvekbe. A LEGJOBB VÉGKIMENETEL – TELJES GYŐZELEM!`,
+    choices: [{ text: "Újrajáték az 1. fejezetből", action: () => resetGame(), target: 1 }]
+  },
+  101: {
+    title: "101. FEJEZET",
+    text: `A 4-es folyami raktárvidék rozsdás dróthálós kerítésénél állsz. A sötétben hatalmas konténerek és kivilágítatlan épületek sora húzódik, míg a fojtogató levegőben sós folyóvíz és égett olaj szaga keveredik.`,
+    choices: [
+      { text: "Megpróbálod átvágni a dróthálót egy drótvágóval: Ugorj a 102. fejezethez.", target: 102 },
+      { text: "Inkább a nyitott főkapun keresel utat: Ugorj a 103. fejezethez.", target: 103 }
+    ]
+  },
+  102: {
+    title: "102. FEJEZET",
+    text: `A rozsdás fémjárda csikordul a talpad alatt, amikor a raktár sötét homályából hirtelen előugrik egy fertőzött munkás! Nincs időd gondolkodni, fel kell venned a küzdelmet.\n\nHarci teszt (Ereje: 3).`,
+    choices: [
+      { text: "Harcolj meg vele!", action: () => resolveCombat(3, 2, 108, 108), target: null }
+    ]
+  },
+  103: {
+    title: "103. FEJEZET",
+    text: `A küzdelem hevében a korlát meglazul, és szörnyű recsegéssel leszakad alólad. A mélybe zuhannál, de az utolsó pillanatban sikerül elkapnod egy acélállványt. Megedződve lépsz tovább (+1 Harcérték).`,
+    choices: [{ text: "Ugorj a 108. fejezethez.", action: () => { gameState.combat += 1; }, target: 108 }]
+  },
+  104: {
+    title: "104. FEJEZET",
+    text: `A nyitott konténer mélyén egy vöröskeresztes orvosi ládára bukkansz. Azonnal ellátod a legcsúnyább sebeidet (+2 Életerő).`,
+    choices: [{ text: "Ugorj a 101. fejezethez.", action: () => modifyStats(2, 0, 0, 0), target: 101 }]
+  },
+  105: {
+    title: "105. FEJEZET",
+    text: `Egy elesett katona mozdulatlan testére bukkansz. Átkutatod a zsebeit, és megtöltött tárakat találsz (+2 Lőszer).`,
+    choices: [{ text: "Ugorj a 108. fejezethez.", action: () => modifyStats(0, 2, 0, 0), target: 108 }]
+  },
+  106: {
+    title: "106. FEJEZET",
+    text: `A raktár sötét sarkából fémes hörgés visszhangzik. Bizonytalan árnyak mozognak a homályban.`,
+    choices: [
+      { text: "Meggyújtasz egy fáklyát? -> Ugorj a 107. fejezethez.", target: 107 },
+      { text: "Csendben, a fal mellett osonsz tovább? -> Ugorj a 108. fejezethez.", target: 108 }
+    ]
+  },
+  107: {
+    title: "107. FEJEZET",
+    text: `Szikrát pattintasz, és a fáklya éles fénye elriasztja a homályban lapuló kisebb lényeket. Sértetlenül átérsz a zónán.`,
+    choices: [{ text: "Ugorj a 108. fejezethez.", target: 108 }]
+  },
+  108: {
+    title: "108. FEJEZET",
+    text: `A fém lépcsősor tetején végre eléred a hídvezérlő fülkét. Lehajtod a főkapcsolót, mire az acélhíd elindul lefelé. Az éles sziréna hangjára azonban valami hatalmas megmozdul a homályban.`,
+    choices: [{ text: "Ugorj a 110. fejezethez.", target: 110 }]
+  },
+  109: {
+    title: "109. FEJEZET",
+    text: `A vezérlőpult szélén egy bőrkötésű tiszti napló hever. Részletesen leírja a kiürítési protokoll hibáit (+1 Információ).`,
+    choices: [{ text: "Ugorj a 110. fejezethez.", action: () => modifyStats(0, 0, 0, 1), target: 110 }]
+  },
+  110: {
+    title: "110. FEJEZET",
+    text: `A híd csattanva a helyére zökken, de a ködből egy több méter magas szörnyeteg lép elő: a Mutáns Rém! Szeméből tiszta téboly sugárzik.`,
+    choices: [{ text: "Ugorj a 111. fejezethez (FŐBOSS 1. FÁZIS).", target: 111 }]
+  },
+  111: {
+    title: "111. FEJEZET (FŐBOSS 1. FÁZIS)",
+    text: `A Mutáns Rém teljes testsúlyával feléd ront! Hatalmas karjával feléd csap.\n\nHarci teszt (Ereje: 6). Ha van lőszered és felhasználod (-1 Lőszer), a szörny Ereje 4-re csökken.`,
+    choices: [
+      { 
+        text: "Lőszer használata (Ereje: 4-re csökken)", 
+        action: () => {
+          if (gameState.ammo >= 1) {
+            modifyStats(0, -1, 0, 0);
+            resolveCombat(4, 3, 115, 115);
+          } else {
+            alert("Nincs lőszered!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Harc lőszer nélkül (Ereje: 6)", action: () => resolveCombat(6, 3, 115, 115), target: null }
+    ]
+  },
+  112: {
+    title: "112. FEJEZET",
+    text: `A lövés eltalálja a szörnyet, mire dühében egy fémlemezt hajít feléd! Vetődsz, és a harc folytatódik.`,
+    choices: [{ text: "Ugorj a 115. fejezethez.", target: 115 }]
+  },
+  113: {
+    title: "113. FEJEZET",
+    text: `A lény maró, zöldes savat köp feléd!\n\nÜgyességi próba (1D6-tal 3 vagy több kell).`,
+    choices: [
+      { 
+        text: "Próba elindítása", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          if (roll >= 3) {
+            alert(`Sikerült félreugranod! Dobásod: ${roll}`);
+          } else {
+            alert(`A sav rád fröccsent! Dobásod: ${roll}. +10% Infekció.`);
+            modifyStats(0, 0, 10, 0);
+          }
+          goToChapter(115);
+        }, 
+        target: null 
+      }
+    ]
+  },
+  114: {
+    title: "114. FEJEZET",
+    text: `Fedezékbe húzódsz a darukábelek mögé. Beszívod a sós tengeri levegőt, és felkészülsz a végső összecsapásra.`,
+    choices: [{ text: "Ugorj a 115. fejezethez.", target: 115 }]
+  },
+  115: {
+    title: "115. FEJEZET (FŐBOSS 2. FÁZIS)",
+    text: `A megsebesült Mutáns Rém kidönt egy acél oszlopot, ami dőlni kezd feléd!\n\nÜgyességi próba (1D6-tal 4 vagy több kell).`,
+    choices: [
+      { 
+        text: "Próba elindítása", 
+        action: () => {
+          let roll = Math.floor(Math.random() * 6) + 1;
+          if (roll >= 4) {
+            alert(`Elugrottál! Az oszlop magát a szörnyet terítette le! Dobásod: ${roll}`);
+          } else {
+            alert(`Az oszlop súrolta a vállad! Dobásod: ${roll}. -2 HP.`);
+            modifyStats(-2, 0, 0, 0);
+          }
+          goToChapter(118);
+        }, 
+        target: null 
+      }
+    ]
+  },
+  116: {
+    title: "116. FEJEZET",
+    text: `A móló deszkázata beszakad a szörny súlya alatt, és a lény félig a résbe ragad. Ez a te esélyed!`,
+    choices: [{ text: "Ugorj a 118. fejezethez.", target: 118 }]
+  },
+  117: {
+    title: "117. FEJEZET",
+    text: `Minden megmaradt erőt beleadsz a végső csapásba. Az egyensúlyát vesztett dög visszatántorodik.`,
+    choices: [{ text: "Ugorj a 118. fejezethez.", target: 118 }]
+  },
+  118: {
+    title: "118. FEJEZET (FŐBOSS FINÁLÉ)",
+    text: `Egy utolsó lökés végleg kibillenti a Mutáns Rémet. A szörnyeteg üvöltve zuhan hátra a sötét tengerbe. A kikötőre néma csend borul. Az út szabad!`,
+    choices: [{ text: "Ugorj a 119. fejezethez.", target: 119 }]
+  },
+  119: {
+    title: "119. FEJEZET",
+    text: `Sietve átvágsz a hídon, és felszaladsz a 4-es mólón álló katonai naszád fedélzetére. El kell indítanod a gépet.`,
+    choices: [{ text: "Ugorj a 86. fejezethez.", target: 86 }]
+  },
+  120: {
+    title: "120. FEJEZET",
+    text: `A naszád fülkéjében a kulcs még ott fityeg a gyújtáskapcsolóban. Elfordítod, s a műszerek zölden gyulladnak ki.`,
+    choices: [{ text: "Ugorj a 86. fejezethez.", target: 86 }]
+  },
+  121: {
+    title: "121. FEJEZET",
+    text: `Megnyomod az indítógombot, s a dízelmotor nehézkesen felbőg. A naszád készen áll az indulásra.`,
+    choices: [{ text: "Ugorj a 86. fejezethez.", target: 86 }]
+  },
+  122: {
+    title: "122. FEJEZET",
+    text: `A móló széli őrházban egy fémkapcsos elsősegély-dobozt találsz. Ellátod a sebeidet (+1 Életerő).`,
+    choices: [{ text: "Ugorj a 119. fejezethez.", action: () => modifyStats(1, 0, 0, 0), target: 119 }]
+  },
+  123: {
+    title: "123. FEJEZET",
+    text: `Átvágod és lefeszegeted a nehéz sodronyokat a kikötőbakokról. A hajó kiszabadul.`,
+    choices: [{ text: "Ugorj a 86. fejezethez.", target: 86 }]
+  },
+  124: {
+    title: "124. FEJEZET",
+    text: `A patika hátsó ajtaján kilépve leereszkedsz a rozsdás hágcsón a sötét csatornába.`,
+    choices: [{ text: "Ugorj a 13. fejezethez.", target: 13 }]
+  },
+  125: {
+    title: "125. FEJEZET",
+    text: `A rács mögül egy vízi fertőzött nyúl feléd, de a fémrács tartja magát. Gyorsítod lépteidet.`,
+    choices: [{ text: "Ugorj a 13. fejezethez.", target: 13 }]
+  },
+  126: {
+    title: "126. FEJEZET",
+    text: `Egy szerszámosládában lőszeres dobozt találsz (+1 Lőszer).`,
+    choices: [{ text: "Ugorj a 81. fejezethez.", action: () => modifyStats(0, 1, 0, 0), target: 81 }]
+  },
+  127: {
+    title: "127. FEJEZET",
+    text: `A csatorna falán a festett felirat jelzi a DOKKOK felőli kijáratot. Megsürgeted lépteidet.`,
+    choices: [{ text: "Ugorj a 71. fejezethez.", target: 71 }]
+  },
+  128: {
+    title: "128. FEJEZET",
+    text: `Felnyomod a csatornaöntvényt, és pont a 4-es raktár mögötti sikátorban bukkansz ki.`,
+    choices: [{ text: "Ugorj a 77. fejezethez.", target: 77 }]
+  },
+  129: {
+    title: "129. FEJEZET",
+    text: `A szervizaknából kibújva a udvaron álló konténerek mögé húzódsz.`,
+    choices: [{ text: "Ugorj a 84. fejezethez.", target: 84 }]
+  },
+  130: {
+    title: "130. FEJEZET",
+    text: `Sűrű ködben haladsz árnyékról árnyékra a mólók felé.`,
+    choices: [{ text: "Ugorj a 101. fejezethez.", target: 101 }]
+  },
+  131: {
+    title: "131. FEJEZET",
+    text: `Az elesett katona zsebében vízhatlan térképrészletet találsz (+1 Információ).`,
+    choices: [{ text: "Ugorj a 80. fejezethez.", action: () => modifyStats(0, 0, 0, 1), target: 80 }]
+  },
+  132: {
+    title: "132. FEJEZET",
+    text: `A fémfúróval sikerül feltörnöd a vezérlőterem zárszerkezetét.`,
+    choices: [{ text: "Ugorj a 108. fejezethez.", target: 108 }]
+  },
+  133: {
+    title: "133. FEJEZET",
+    text: `Egy teherautó kabinjában tiszta vizespalackot találsz (+1 Életerő).`,
+    choices: [{ text: "Ugorj a 101. fejezethez.", action: () => modifyStats(1, 0, 0, 0), target: 101 }]
+  },
+  134: {
+    title: "134. FEJEZET",
+    text: `Egy leszakadó darukampó csapódik le melléd! Az utolsó pillanatban vetődsz el.`,
+    choices: [{ text: "Ugorj a 110. fejezethez.", target: 110 }]
+  },
+  135: {
+    title: "135. FEJEZET",
+    text: `A raktárnegyed megerősített acélkapujához érsz.`,
+    choices: [
+      { 
+        text: "Ha van kulcsod és használod: Ugorj a 101. fejezethez.", 
+        action: () => {
+          if (hasState('CSATORNA_KULCS')) {
+            goToChapter(101);
+          } else {
+            alert("Nincs kulcsod!");
+          }
+        }, 
+        target: null 
+      },
+      { text: "Ha nincs kulcsod és átmászol: Ugorj a 136. fejezethez.", target: 136 }
+    ]
+  },
+  136: {
+    title: "136. FEJEZET",
+    text: `Átmászáskor a szögesdrót belevág a tenyeredbe (-1 Életerő).`,
+    choices: [{ text: "Ugorj a 101. fejezethez.", action: () => modifyStats(-1, 0, 0, 0), target: 101 }]
+  },
+  137: {
+    title: "137. FEJEZET",
+    text: `Egy kifolyt gázolajpocsolyát kerülsz ki lábujjhegyen. Szerencsésen átérsz.`,
+    choices: [{ text: "Ugorj a 101. fejezethez.", target: 101 }]
+  },
+  138: {
+    title: "138. FEJEZET",
+    text: `Mutálódott sirályok lakmároznak a rámpán. Óvatosan kikerülöd a rajat.`,
+    choices: [{ text: "Ugorj a 110. fejezethez.", target: 110 }]
+  },
+  139: {
+    title: "139. FEJEZET",
+    text: `A reflektor kigyullad, bevilágítva a mólót. Sokkal magabiztosabban látod a terepet.`,
+    choices: [{ text: "Ugorj a 111. fejezethez.", target: 111 }]
+  },
+  140: {
+    title: "140. FEJEZET",
+    text: `A szörnyeteg ordítása megrázza a mólót. Felkészülsz a harcra.`,
+    choices: [{ text: "Ugorj a 111. fejezethez.", target: 111 }]
+  },
+  141: {
+    title: "141. FEJEZET",
+    text: `Egy jelzőrakéta-pisztolyt találsz, és a szörny mellkasába lövöd! (A szörny Ereje 2-vel csökken).`,
+    choices: [{ text: "Ugorj a 115. fejezethez.", target: 115 }]
+  },
+  142: {
+    title: "142. FEJEZET",
+    text: `A szörnyeteg elpusztulása után felveszed csomagjaidat, s megindulsz a hajó felé.`,
+    choices: [{ text: "Ugorj a 119. fejezethez.", target: 119 }]
+  },
+  143: {
+    title: "143. FEJEZET",
+    text: `A naszád tartályai telve vannak. Minden készen áll a kifutásra.`,
+    choices: [{ text: "Ugorj a 86. fejezethez.", target: 86 }]
+  },
+  144: {
+    title: "144. FEJEZET",
+    text: `Egy vízhatlan rekeszben steril kötszereket találsz (+1 Életerő).`,
+    choices: [{ text: "Ugorj a 87. fejezethez.", action: () => modifyStats(1, 0, 0, 0), target: 87 }]
+  },
+  145: {
+    title: "145. FEJEZET",
+    text: `A csillagképek alapján lövöd be a pontos navigációt a nyílt tengerre.`,
+    choices: [{ text: "Ugorj a 90. fejezethez.", target: 90 }]
+  },
+  146: {
+    title: "146. FEJEZET",
+    text: `A nagy hatótávolságú rádión leadod a koordinátáidat. A segítség válaszol.`,
+    choices: [{ text: "Ugorj a 91. fejezethez.", target: 91 }]
+  },
+  147: {
+    title: "147. FEJEZET",
+    text: `A hűsítő sós tengeri szél kellemesen hűsíti égető sebeidet.`,
+    choices: [{ text: "Ugorj a 95. fejezethez.", target: 95 }]
+  },
+  148: {
+    title: "148. FEJEZET",
+    text: `Gondosan sorbarendezed az összegyűjtött adatókat a kihallgatásra.`,
+    choices: [{ text: "Ugorj a 96. fejezethez.", target: 96 }]
+  },
+  149: {
+    title: "149. FEJEZET",
+    text: `A mentőflotta keresőfényei bevilágítják a tengerfelszínt. Megmenekültél!`,
+    choices: [{ text: "Ugorj a 96. fejezethez.", target: 96 }]
+  },
+  150: {
+    title: "150. FEJEZET (GYŰJTŐ FEJEZET)",
+    text: `A naszád automata pilótája kivezeti a hajót a nyílt vízre. Grayhaven lángoló sziluettje lassan zsugorodik a horizonton.`,
+    choices: [{ text: "Ugorj a 87. fejezethez.", target: 87 }]
+  }
+};
+
+// Karakterválasztás
+function selectChar(name, hp, combat, ammo, inf, info) {
+  gameState.character = name;
+  gameState.hp = hp;
+  gameState.maxHp = hp;
+  gameState.combat = combat;
+  gameState.ammo = ammo;
+  gameState.infection = inf;
+  gameState.info = info;
+  gameState.inventory = [];
+  updateHUD();
+}
+
+// Fejléces adatok frissítése
+function updateHUD() {
+  document.getElementById('hud-char').innerText = gameState.character || "Kiválasztás...";
+  document.getElementById('hud-hp').innerText = gameState.hp !== null ? `${gameState.hp} / ${gameState.maxHp}` : "--";
+  document.getElementById('hud-ammo').innerText = gameState.ammo !== null ? gameState.ammo : "--";
+  
+  let infElem = document.getElementById('hud-inf');
+  infElem.innerText = `${gameState.infection}%`;
+  if (gameState.infection >= 50) {
+    infElem.classList.add('danger');
+  } else {
+    infElem.classList.remove('danger');
+  }
+
+  document.getElementById('hud-info-count').innerText = gameState.info;
+  document.getElementById('hud-inventory').innerText = gameState.inventory.length > 0 ? gameState.inventory.join(', ') : "Nincs különleges tárgy";
+}
+
+// Állapotok/Táska kezése
+function addState(item) {
+  if (!gameState.inventory.includes(item)) {
+    gameState.inventory.push(item);
+    updateHUD();
+  }
+}
+
+function hasState(item) {
+  return gameState.inventory.includes(item);
+}
+
+// Statisztikák módosítása
+function modifyStats(hpDiff, ammoDiff, infDiff, infoDiff) {
+  if (gameState.hp !== null) {
+    gameState.hp = Math.min(gameState.maxHp, gameState.hp + hpDiff);
+    if (gameState.hp <= 0) {
+      alert("Életerőd elért 0-ra! Meghaltál. GAME OVER!");
+      resetGame();
+      return;
+    }
+  }
+  if (gameState.ammo !== null) gameState.ammo = Math.max(0, gameState.ammo + ammoDiff);
+  if (gameState.infection !== null) gameState.infection = Math.max(0, gameState.infection + infDiff);
+  if (gameState.info !== null) gameState.info = Math.max(0, gameState.info + infoDiff);
+  updateHUD();
+}
+
+// Harc kalkulátor
+function resolveCombat(enemyPower, damageOnLoss, winTarget, lossTarget, infOnLoss = 0, infoOnWin = 0, ammoOnWin = 0, hpOnWin = 0) {
+  let pRoll = Math.floor(Math.random() * 6) + 1;
+  let eRoll = Math.floor(Math.random() * 6) + 1;
+  let pTotal = pRoll + gameState.combat;
+  let eTotal = eRoll + enemyPower;
+
+  let msg = `Harc eredménye:\nTe dobásod: ${pRoll} + Harcérték (${gameState.combat}) = ${pTotal}\nEllenfél dobása: ${eRoll} + Ereje (${enemyPower}) = ${eTotal}\n\n`;
+
+  if (pTotal > eTotal) {
+    msg += "GYŐZTÉL A HARCBAN!";
+    alert(msg);
+    modifyStats(hpOnWin, ammoOnWin, 0, infoOnWin);
+    goToChapter(winTarget);
+  } else {
+    msg += `VESZÍTETTÉL! Veszítesz ${damageOnLoss} Életerőt.`;
+    alert(msg);
+    modifyStats(-damageOnLoss, 0, infOnLoss, 0);
+    if (gameState.hp > 0) {
+      goToChapter(lossTarget);
+    }
+  }
+}
+
+// Fejezetváltás (Szigorúan csak 1 fejezet jelenik meg)
+function goToChapter(chapId) {
+  const container = document.getElementById('chapter-container');
+  container.innerHTML = '';
+
+  const data = storyData[chapId];
+  if (!data) return;
+
+  const card = document.createElement('div');
+  card.className = 'chapter-card active';
+  
+  let html = `<div class="chapter-title">${data.title}</div>`;
+  html += `<div class="story-text">${data.text}</div>`;
+  html += `<div class="choices">`;
+
+  data.choices.forEach((ch, idx) => {
+    html += `<button class="choice-btn" id="btn-ch-${idx}">${ch.text}</button>`;
+  });
+
+  html += `</div>`;
+  card.innerHTML = html;
+  container.appendChild(card);
+
+  // Eseménykezelők rendelése a gombokhoz
+  data.choices.forEach((ch, idx) => {
+    document.getElementById(`btn-ch-${idx}`).addEventListener('click', () => {
+      if (ch.action) ch.action();
+      if (ch.target !== null && ch.target !== undefined) {
+        goToChapter(ch.target);
+      }
+    });
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Játékszabályok megnyitása/bezárása
+function toggleRules() {
+  const content = document.getElementById('rules-content');
+  if (content.style.display === 'block') {
+    content.style.display = 'none';
+  } else {
+    content.style.display = 'block';
+  }
+}
+
+// Újrajáték alaphelyzetbe állítás
+function resetGame() {
+  gameState = {
+    character: null,
+    hp: null,
+    maxHp: null,
+    combat: 0,
+    ammo: null,
+    infection: 0,
+    info: 0,
+    inventory: []
+  };
+  updateHUD();
+  goToChapter(1);
+}
+
+// Indítás
+goToChapter(1);
+</script>
+</body>
+</html>

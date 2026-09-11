@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Válassz Világot!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            padding: 50px 20px;
+        }
+        h1 {
+            color: #f39c12;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+            line-height: 1.6;
+        }
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 30px;
+            width: 280px;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #f39c12;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #e74c3c;
+        }
+        .card.rozsda h2 {
+            color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ITT MÓDOSÍTHATOD A BEVEZETŐ SZÖVEGET -->
+    <h1>Üdvözöllek, Kalandor!</h1>
+    <p>Két veszélyes és sorsfordító világ vár rád. Válaszd ki, melyik történetbe szeretnél fejest ugrani!
+ Melyik világba szeretnél belépni?</p>
+
+    <div class="cards">
+        <!-- LINK A GRAYHAVEN JÁTÉKRA -->
+        <a href="grayhaven.html" class="card">
+            <h2>Grayhaven City ☣️</h2>
+            <p>Grayhaven egy káoszba fulladt nagyváros, ahol elszabadult a halálos K-17-es vírus. Az utcákat elözönlötték a mutálódott fertőzöttek és a katonai karantén csapatai. A város felett visszaszámlálás ketyeg: a hadsereg végső szőnyegbombázásra készül, így a túlélőknek versenyt kell futniuk az idővel a romok között.</p>
+        </a>
+
+        <!-- LINK A ROZSDAFÉNY JÁTÉKRA -->
+        <a href="rozsdafeny.html" class="card rozsda">
+            <h2>Rozsdafény ⚙️</h2>
+            <p>Egy sötét, poszt-apokaliptikus világ, amelyet a nyers ipari rozsda, a pusztulás és a disztópikus veszélyek uralnak. Ebben a kegyetlen környezetben az életért folytatott küzdelem a mindennapok része, ahol az elhagyatott gépek és csapdákkal teli utak között csak a legfüggetlenebb túlélők maradhatnak talpon.</p>
+        </a>
+    </div>
+
+</body>
+</html>
