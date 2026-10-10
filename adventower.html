@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Kiválasztott Munkaidőben Küzd</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e2e; color: #cdd6f4; margin: 0; padding: 20px; display: flex; justify-content: center; }
+#game-container { max-width: 950px; width: 100%; background-color: #181825; border: 2px solid #45475a; border-radius: 8px; padding: 25px; box-shadow: 0 0 25px rgba(0,0,0,0.7); position: relative; }
+h1 { text-align: center; color: #f9e2af; margin-top: 0; border-bottom: 2px solid #45475a; padding-bottom: 12px; font-size: 1.8rem; }
+.stats-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background-color: #11111b; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #313244; font-size: 0.9rem; }
+.stat-item { margin: 4px 6px; }
+.stat-value { color: #a6e3a1; font-weight: bold; }
+.frust-value { color: #fab387; font-weight: bold; }
+.top-btn { background-color: #89b4fa !important; color: #11111b !important; font-weight: bold; border: none !important; padding: 8px 12px !important; border-radius: 4px; cursor: pointer; box-shadow: 0 0 10px rgba(137,180,250,0.3); margin-left: 4px; margin-top: 4px; }
+.top-btn:hover { background-color: #b4befe !important; }
+.content-layout { display: flex; gap: 20px; margin-bottom: 25px; }
+#story-text { flex: 2; line-height: 1.7; font-size: 1.05rem; min-height: 160px; white-space: pre-line; background: #1e1e2e; padding: 15px; border-radius: 5px; border-left: 4px solid #f9e2af; }
+.margin-notes { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.note-box { padding: 10px; border-radius: 5px; font-size: 0.88rem; font-style: italic; line-height: 1.4; }
+.note-inspector { background-color: #2b1d24; border: 1px solid #f38ba8; color: #f38ba8; }
+.note-veteran { background-color: #1c2536; border: 1px solid #89b4fa; color: #89b4fa; }
+.options-container { display: flex; flex-direction: column; gap: 12px; }
+button { background-color: #313244; color: #cdd6f4; border: 1px solid #45475a; padding: 14px 18px; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 1rem; text-align: left; transition: all 0.2s ease; }
+button:hover { background-color: #45475a; border-color: #f9e2af; color: #fff; }
+button.btn-combat { border-left: 5px solid #f38ba8; }
+button.btn-combat:hover { border-color: #f38ba8; background-color: #452735; }
+button.btn-tactical { border-left: 5px solid #89b4fa; }
+button.btn-tactical:hover { border-color: #89b4fa; background-color: #263859; }
+button.btn-ult { border-left: 5px solid #cba6f7; background-color: #2e1f3b; }
+button.btn-ult:hover { border-color: #cba6f7; background-color: #432559; }
+.text-red { color: #f38ba8; font-weight: bold; }
+.text-blue { color: #89b4fa; font-weight: bold; }
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
+#customAlertModal, #customPromptModal { z-index: 200; }
+.modal-content { background-color: #181825; border: 2px solid #89b4fa; border-radius: 8px; width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 25px; box-shadow: 0 0 25px rgba(137,180,250,0.2); color: #cdd6f4; }
+.close-modal { color: #a6adc8; font-size: 24px; font-weight: bold; cursor: pointer; float: right; }
+.close-modal:hover { color: #fff; }
+.custom-modal-text { font-size: 1.05rem; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; color: #cdd6f4; }
+.custom-modal-input { width: 100%; padding: 10px; background: #1e1e2e; border: 1px solid #45475a; color: #cdd6f4; border-radius: 4px; font-family: inherit; font-size: 1rem; margin-bottom: 20px; }
+.custom-modal-input:focus { border-color: #89b4fa; outline: none; }
+.folder-real-container { background-color: #d4b26f; background-image: radial-gradient(#c29f5b 15%, transparent 16%); background-size: 10px 10px; border-radius: 0 15px 10px 10px; padding: 15px 20px 20px 20px; box-shadow: 10px 10px 25px rgba(0,0,0,0.6); color: #2b2315; font-family: 'Courier New', Courier, monospace; position: relative; border: 2px solid #a3813e; margin-top: 25px; }
+.folder-tab-header { position: absolute; top: -26px; left: -2px; background-color: #d4b26f; border: 2px solid #a3813e; border-bottom: none; padding: 4px 20px; border-radius: 8px 12px 0 0; font-weight: bold; font-size: 0.9rem; color: #3d2f19; }
+.folder-paper-sheet { background: #fdfbf7; border: 1px solid #dcd3c1; padding: 15px; margin-bottom: 15px; border-radius: 3px; position: relative; }
+.folder-paper-sheet::before { content: " 📌 "; position: absolute; top: -10px; left: 10px; font-size: 1.2rem; }
+.folder-sheet-title { font-weight: bold; font-size: 1rem; color: #4a3b22; border-bottom: 1px dashed #b8a990; padding-bottom: 5px; margin-bottom: 10px; }
+.form-group { margin-bottom: 10px; }
+.form-group label { display: block; font-size: 0.85rem; margin-bottom: 3px; color: #4a3b22; font-weight: bold; }
+.form-group input, .form-group select { width: 100%; padding: 8px; background: #f4eee1; border: 1px solid #b8a990; color: #2b2315; border-radius: 3px; font-family: inherit; }
+.visual-stamp-badge { display: inline-block; border: 3px double #b32424; color: #b32424; font-size: 1.1rem; font-weight: 900; padding: 4px 12px; text-transform: uppercase; letter-spacing: 2px; transform: rotate(-8deg); border-radius: 4px; background-color: rgba(179,36,36,0.05); margin: 6px 4px; }
+.journal-list { list-style: none; padding-left: 5px; margin: 0; font-size: 0.9rem; color: #3d2f19; }
+.journal-list li { padding: 4px 0; border-bottom: 1px dotted #dcd3c1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.email-client { background: #fff; color: #222; border-radius: 6px; border: 1px solid #ccc; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+.email-header-bar { background: #0078d4; color: white; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+.email-meta { background: #f3f2f1; padding: 12px 15px; border-bottom: 1px solid #e1dfdd; font-size: 0.88rem; }
+.email-body-content { padding: 20px; font-size: 0.95rem; line-height: 1.5; min-height: 100px; background: #fff; }
+.email-reply-box { background: #faf9f8; border-top: 2px solid #0078d4; padding: 15px; margin-top: 10px; }
+.typing-cursor::after { content: '|'; animation: blink 0.7s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@media (max-width: 700px) { .content-layout { flex-direction: column; } body { padding: 8px; } #game-container { padding: 14px; } }
+#toast-container { position: fixed; top: 12px; right: 12px; z-index: 300; display: flex; flex-direction: column; gap: 8px; max-width: 340px; pointer-events: none; }
+.toast { background: #11111b; color: #f9e2af; border: 1px solid #f9e2af; border-left: 5px solid #fab387; padding: 10px 14px; border-radius: 5px; font-size: 0.9rem; box-shadow: 0 0 15px rgba(0,0,0,0.6); }
+.mail-row { padding: 9px 14px; border-bottom: 1px solid #e1dfdd; cursor: pointer; font-size: 0.9rem; }
+.mail-row:hover { background: #eef5fc !important; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>A Kiválasztott Munkaidőben Küzd</h1>
+
+    <div id="stats-panel" class="stats-bar" style="display:none;">
+        <div class="stat-item">Név: <span id="p-name" class="stat-value">-</span> (<span id="p-race" style="color:#f9e2af;">-</span> <span id="p-class" style="color:#89b4fa;">-</span>)</div>
+        <div class="stat-item" title="Kiégés Tűrése">KT: <span id="kt" class="stat-value">30</span>/<span id="max-kt">30</span></div>
+        <div class="stat-item" title="Frusztráció">KFF: <span id="kff" class="frust-value">0</span></div>
+        <div class="stat-item" title="Fejezet (új helyszínre lépések száma)">Fejezet: <span id="chapter" class="stat-value">0</span></div>
+        <div class="stat-item">Sebzés: <span id="atk" class="stat-value">5</span></div>
+        <div class="stat-item">Páncél: <span id="bp" class="stat-value">0</span></div>
+        <div class="stat-item">ÁFA-s Arany: <span id="gold" class="stat-value">10</span></div>
+        <div class="stat-item" title="Társ">Társ: <span id="companion" class="stat-value">-</span></div>
+        <div>
+            <button class="top-btn" onclick="openFolder()"> 📂 Mappa</button>
+            <button class="top-btn" style="background-color:#fab387 !important;" onclick="openCoffee()"> ☕ Kávészünet</button>
+            <button class="top-btn" style="background-color:#f9e2af !important;" onclick="openInbox()"> 📧 Levelek (<span id="unread-count">1</span>)</button>
+            <button class="top-btn" style="background-color:#a6e3a1 !important;" onclick="openHelp()"> ❓ SZMSZ Súgó</button>
+            <button class="top-btn" style="background-color:#94e2d5 !important;" onclick="saveGame(true)"> 💾 Mentés</button>
+            <button class="top-btn" style="background-color:#cba6f7 !important;" onclick="openRecords()"> 🏆 Rekordok</button>
+        </div>
+    </div>
+
+    <div class="content-layout">
+        <div id="story-text"></div>
+        <div id="margin-container" class="margin-notes" style="display:none;">
+            <div id="note-inspector" class="note-box note-inspector"></div>
+            <div id="note-veteran" class="note-box note-veteran"></div>
+        </div>
+    </div>
+
+    <div id="options" class="options-container"></div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- MAPPA -->
+<div id="folderModal" class="modal">
+    <div class="modal-content" style="background: transparent; border: none; box-shadow: none; max-width: 650px;">
+        <div class="folder-real-container">
+            <div class="folder-tab-header"> 🗂️ HIVATALI AKTÁK // DOSSZIÉ-32B</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #8c6f3e; padding-bottom:8px; margin-bottom:15px;">
+                <span style="font-weight:bold; font-size:1.1rem; color:#3d2f19;"> 📁 SZEMÉLYES ÜGYI MAPPA</span>
+                <span class="close-modal" style="color:#3d2f19;" onclick="closeFolder()">&times;</span>
+            </div>
+
+            <div class="folder-paper-sheet">
+                <div class="folder-sheet-title"> ✏️ SZÉLJEGYZETEK & MUNKAFELADATOK</div>
+                <ul id="journal-task-list" class="journal-list"></ul>
+            </div>
+
+            <div class="folder-paper-sheet">
+                <div class="folder-sheet-title"> 📄 32/B SZÁMÚ DOKUMENTUM STÁTUSZ</div>
+                <p id="doc-status" style="margin:5px 0; color:#8a2be2; font-weight:bold;">Sötétség-megszüntetésre Vár</p>
+                <div id="applied-stamps" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="folder-paper-sheet">
+                <div id="form-overlay-stamp" style="position:absolute; right:15px; top:15px;"></div>
+                <div class="folder-sheet-title"> 📝 32/B ŰRLAP HITELESÍTÉSE</div>
+                <div id="form-32b-container" style="margin-top:10px;">
+                    <div class="form-group">
+                        <label>Kérelmező Hivatalos Neve:</label>
+                        <input type="text" id="form-name" placeholder="Írd be a neved...">
+                    </div>
+                    <div class="form-group">
+                        <label>Első Háziállatod Neve (biztonsági kérdés):</label>
+                        <input type="text" id="form-pet" placeholder="Jegyezd meg, még jól jön!">
+                    </div>
+                    <div class="form-group">
+                        <label>Kérelem Indoklása:</label>
+                        <select id="form-reason">
+                            <option value="hero_on_leave">Az Igazi Hős Szabadságon Van</option>
+                            <option value="darkness">A Sötétség Túllépte a Kvótát</option>
+                        </select>
+                    </div>
+                    <button style="width:100%; padding:8px; background-color:#8c6f3e; color:#fff; font-weight:bold; border:none; border-radius:3px;" onclick="submitForm32B()"> 🖊️ Űrlap Hitelesítése</button>
+                </div>
+                <div id="form-approved-msg" style="display:none; color:#1e7e34; font-weight:bold; margin-top:8px;">
+                    <span> ✅ Az űrlap hivatalosan hitelesítve és az aktához csatolva.</span>
+                </div>
+            </div>
+
+            <div class="folder-paper-sheet">
+                <div class="folder-sheet-title"> 🎒 CSATOLT TÁRGYAK & LELTÁR</div>
+                <p id="folder-inventory" style="margin:5px 0 10px 0; color:#3d2f19; font-weight:bold;"></p>
+                <button style="padding:8px 12px; font-size:0.85rem; background-color:#313244; color:#fff; border:none; border-radius:3px;" onclick="tryCrafting()"> 🧪 Tárgyak Kombinálása (automatikus receptek)</button>
+            </div>
+
+            <button style="width:100%; text-align:center; background-color:#5a4525; color:#fff; font-weight:bold; padding:10px; border:none; border-radius:4px;" onclick="closeFolder()">Mappa Bezárása</button>
+        </div>
+    </div>
+</div>
+
+<!-- LEVELEK -->
+<div id="inboxModal" class="modal">
+    <div class="modal-content" style="max-width:700px; padding:0; background:transparent; border:none;">
+        <div class="email-client">
+            <div class="email-header-bar">
+                <span> 📬 Hivatali WebMail v4.2 - Beérkező Levelek</span>
+                <span class="close-modal" style="color:white; margin-right:10px;" onclick="closeInbox()">&times;</span>
+            </div>
+            <div id="email-view-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- KÁVÉ -->
+<div id="coffeeModal" class="modal">
+    <div class="modal-content" style="text-align:center;">
+        <span class="close-modal" onclick="closeCoffee()">&times;</span>
+        <h3 style="color:#89b4fa;"> ☕ Hivatali Kávéfőző Rendszer</h3>
+        <p>Ára: 2 ÁFA-s Arany. Nyomd meg a gombot, amíg el nem éred a 100%-os nyomást!</p>
+        <h3 id="coffee-status" style="color:#f9e2af;">Nyomás: 0%</h3>
+        <button id="coffee-btn" style="width:100%; text-align:center; padding:15px; font-weight:bold;" onclick="pumpCoffee()"> ☕ KÁVÉ FŐZÉSE (Pumpáld!)</button>
+    </div>
+</div>
+
+<!-- SÚGÓ -->
+<div id="recordsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeRecords()">&times;</span>
+        <h3 style="color:#cba6f7;"> 🏆 Eredménytábla – Legkiégetlenebb Munkavállalók</h3>
+        <div id="records-body"></div>
+        <button style="width:100%; text-align:center; margin-top:15px;" onclick="closeRecords()">Bezár</button>
+    </div>
+</div>
+
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeHelp()">&times;</span>
+        <h3 style="color:#89b4fa;"> ❓ Szervezeti Működési Szabályzat (SZMSZ)</h3>
+        <div style="line-height:1.6; font-size:0.9rem;">
+            <p><strong> 📊 Fő Statisztikák:</strong></p>
+            <ul>
+                <li><strong>KT (Kiégés Tűrése):</strong> A karakter életereje. Ha eléri a 0-t, kiégtél és a játék véget ér!</li>
+                <li><strong>KFF (Frusztrációs Faktor):</strong> A felgyülemlett stressz. Rontja a harci teljesítményt (3 KFF-enként -1 sebzés). Ha eléri a 30-at, kiégtél: játék vége!</li>
+                <li><strong>BP (Bürokratikus Páncél):</strong> Csökkenti a harcban bekapott sérüléseket.</li>
+                <li><strong>ÁFA-s Arany:</strong> Hivatali fizetőeszköz kávéra, megvesztegetésre és szolgáltatásokra.</li>
+            </ul>
+            <p><strong> 🧬 Fajok és Képességek:</strong></p>
+            <ul>
+                <li><strong>Bürokrata Tünde:</strong> <em>Agresszív Formanyomtatvány</em> – Ész 2: a Portásnál, az Ellenőrnél, a HR-esnél és az Ügyintézőnél harc nélkül továbbjutsz.</li>
+                <li><strong>Melankolikus Törpe:</strong> <em>Súlyos Panasz</em> – Beérkező sérülés után azonnal +3 extra visszavágó sebzést ad.</li>
+                <li><strong>Nyugdíjas Hobbiméretű:</strong> <em>Uzsonnapause</em> – Harc közben elfogyasztott szendvics +5 KT-t tölt vissza (harconként egyszer).</li>
+                <li><strong>Túlmotivált Ember:</strong> <em>Főhős-szindróma</em> – +2 sebzés, ha a KT értéke 1-en áll.</li>
+            </ul>
+            <p><strong> 💼 Szakmák / Kasztok:</strong></p>
+            <ul>
+                <li><strong>Számlaképes Mágus:</strong> <em>Rejtett Költség</em> – a Végső Csapás háromszoros sebzést okoz.</li>
+                <li><strong>Szakszervezeti Harcos:</strong> <em>Kötelező Pihenőidő</em> – Védekezéskor megduplázódik a BP.</li>
+                <li><strong>Passzív-Agresszív Zsivány:</strong> <em>Teátrális Szemforgatás</em> – a következő csapás dupla sebzést okoz.</li>
+            </ul>
+            <p><strong> ☕ Kávéfőző Rendszer:</strong></p>
+            <p>2 ÁFA-s Aranyért cserébe a nyomás gomb pumpálásával (100%-ig) +6 KT-t tölthetsz vissza.</p>
+            <p><strong> 🎒 Tárgykombinálás:</strong></p>
+            <p>A Mappában a <em>Kifogyott Toll</em> és a <em>Piros Tinta</em> kombinálásával előállítható a <em>Működő Hivatali Toll</em> (+2 Sebzés!). A <em>Hivatali Pecsét</em> (Beszerzési Raktár) és a toll együtt <em>Pecsétnyomó Pallos</em> / <em>Pecsétnyomó Toll</em>.</p>
+            <p><strong> 🎲 Tulajdonságok:</strong></p>
+            <p>Erő: +1 sebzés/pont. Ügyesség: kisebb mellélövési esély (alap 20%, -6%/pont). Fizikum: +3 KT/pont. Ész: olcsóbb megvesztegetés, Ész 2 esetén a Tünde képessége. A Szemforgatás garantált találat, de az ellenfél közben támad.</p>
+            <p><strong> 📧 Levelezés és Frusztráció:</strong></p>
+            <ul>
+                <li>Fejezet = minden új helyszínre lépés (a számláló a felső sávban látszik).</li>
+                <li>Minden 4. fejezet végén új bürokratikus levél érkezik. A levelek nem vesznek el, felhalmozódnak a Beérkező mappában.</li>
+                <li>Ha egy levélre az érkezésétől számított 3 fejezeten belül nem válaszolsz, a 4. fejezetbe lépve +5 KFF jár.</li>
+                <li>Minden megválaszolt levél -1 KFF (minimum 0). A lejárt levelekre is lehet válaszolni.</li>
+                <li>A Vezérigazgatói Liftben szerzett elismerő levélnek nincs határideje, de ha megválaszolod, a KFF a felére csökken.</li>
+            </ul>
+            <p><strong> 🤝 Társak:</strong></p>
+            <p>A Csapatépítő Hétvégén egy kollégát választhatsz: a <em>Gyakornok</em> harcban 35% eséllyel 3 sebzést okoz, a <em>Kávéfőző-Szellem</em> minden megnyert harc után +3 KT-t ad, és néha enyhíti a bekapott sebzést.</p>
+            <p><strong> 🎮 Minijátékok és különlegességek:</strong></p>
+            <ul>
+                <li><em>Kávéautomata-póker</em> (Büfé): lapokat tarthatsz meg, utána cserélsz. Legfeljebb 4 kör.</li>
+                <li><em>Tűzfal-kódtörés</em> (Szerverszoba): Mastermind, 4 számjegy (1–6), 8 próbálkozás.</li>
+                <li><em>Home Office Dimenzió</em>: háromszor kell kamerabekapcsolás nélkül túlélni a hívást.</li>
+                <li><em>Évi Teljesítményértékelés</em>: a tulajdonságaid és a levelezési fegyelmed számít.</li>
+                <li><em>Raktár-Selejtezés</em>: legfeljebb 3 tárgyadról kell nyilatkozni, különben eltűnnek.</li>
+                <li><em>Végső Pecsét</em>: egyszer használható, bizonyos ajtókat és akadályokat kinyit.</li>
+                <li>Több befejezés létezik, köztük titkos is.</li>
+            </ul>
+            <p><strong> 💾 Mentés:</strong></p>
+            <p>A játék automatikusan ment minden új helyszínen (a böngészőben). Induláskor a „Folytatás” gombbal tudsz továbbmenni. Az Eredménytábla a teljesített futamokat mutatja.</p>
+            <p><strong> 📌 Pecsétek:</strong></p>
+            <p>A Trónterem kapujához mindkét pecsét kell: <em>ELLENŐRIZVE</em> (Nyomtatószoba) és <em>JÓVÁHAGYVA</em> (Kérvényezési Osztály). Az ELLENŐRIZVE pecsétet a Titkárnő-Sárkány is pótolja.</p>
+        </div>
+        <button style="width:100%; text-align:center; margin-top:15px;" onclick="closeHelp()">Értem</button>
+    </div>
+</div>
+
+<!-- EGYEDI ALERT -->
+<div id="customAlertModal" class="modal">
+    <div class="modal-content" style="max-width:450px; text-align:center;">
+        <h3 style="color:#f9e2af; margin-top:0;">🗂️ Hivatali Értesítés</h3>
+        <div id="customAlertText" class="custom-modal-text"></div>
+        <button style="width:100%; text-align:center; background-color:#89b4fa; color:#11111b; font-weight:bold;" onclick="closeCustomAlert()">Tudomásul véve</button>
+    </div>
+</div>
+
+<!-- EGYEDI PROMPT -->
+<div id="customPromptModal" class="modal">
+    <div class="modal-content" style="max-width:450px;">
+        <h3 style="color:#f9e2af; margin-top:0;">📝 Hivatali Adatbeviteli Űrlap</h3>
+        <div id="customPromptText" class="custom-modal-text"></div>
+        <input type="text" id="customPromptInput" class="custom-modal-input" placeholder="Írd be a választ..." maxlength="30">
+        <div style="display:flex; gap:10px;">
+            <button style="flex:1; text-align:center; background-color:#a6e3a1; color:#11111b; font-weight:bold;" onclick="submitCustomPrompt(true)">Elküldés</button>
+            <button style="flex:1; text-align:center;" onclick="submitCustomPrompt(false)">Mégse</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ============ ÁLLAPOT ============ */
+let player = {
+    name: "", raceKey: "", raceName: "", classKey: "", className: "",
+    kt: 30, maxKt: 30, kff: 0, atk: 5, bp: 0, gold: 10,
+    inventory: ["32/B Nyomtatvány", "Kifogyott Toll"],
+    formApproved: false, stamps: [], ultUsed: false, snackUsed: false, eyeRollActive: false,
+    printerDone: false,
+    stats: { ero: 0, ugy: 0, esz: 0, fiz: 0 },
+    flags: {},
+    emails: [],
+    companion: "",
+    chapter: 0, gameOverReason: ""
+};
+
+let journalTasks = [
+    { id: "selection",   text: "Tudomásul venni, hogy te vagy A Kiválasztott", done: true },
+    { id: "office_gate", text: "Átjutni a Portán és elhagyni az Irodaházat", done: false },
+    { id: "city_cross",  text: "Átvágni a Városon a Fekete Toronyig", done: false },
+    { id: "form_fill",   text: "32/B űrlap kitöltése a Mappában (a háziállat nevét jegyezd meg!)", done: false },
+    { id: "stamp_1",     text: "ELLENŐRIZVE pecsét megszerzése", done: false },
+    { id: "labyrinth",   text: "Átvágás az Irattári Részleg 5 szintjén", done: false },
+    { id: "stamp_2",     text: "JÓVÁHAGYVA pecsét megszerzése", done: false },
+    { id: "boss",        text: "Belépni a Sötét Nagyúr Tróntermébe", done: false }
+];
+
+const races = {
+    elf:      { name: "Bürokrata Tünde",       bonus: "Agresszív Formanyomtatvány (+2 Ész, -1 Erő)",   kt: 28, atk: 4, goldBonus: 5, stats: { ero: -1, ugy: 0, esz: 2, fiz: 0 } },
+    dwarf:    { name: "Melankolikus Törpe",    bonus: "Súlyos Panasz (+2 Fizikum, -1 Ügyesség)",       kt: 36, atk: 6, goldBonus: 0, stats: { ero: 0, ugy: -1, esz: 0, fiz: 2 } },
+    halfling: { name: "Nyugdíjas Hobbiméretű", bonus: "Uzsonnapause (+2 Ügyesség, -1 Erő)",            kt: 30, atk: 4, goldBonus: 10, stats: { ero: -1, ugy: 2, esz: 0, fiz: 0 } },
+    human:    { name: "Túlmotivált Ember",     bonus: "Főhős-szindróma (+1 Minden Tulajdonságra)",     kt: 32, atk: 5, goldBonus: 5, stats: { ero: 1, ugy: 1, esz: 1, fiz: 1 } }
+};
+
+const classes = {
+    mage:    { name: "Számlaképes Mágus",         ultName: "Rejtett Költség-Kiszámlázás", items: ["Varázs-golyóstoll", "ÁFA-kulcsos bot"], gold: 50, atkMod: 2, bpMod: 0, ultMult: 3 },
+    warrior: { name: "Szakszervezeti Harcos",     ultName: "Kötelező Pihenőidő",          items: ["Rozsdás pallos", "Munkavédelmi sisak (+2 BP)", "Megbízási szerződés"], gold: 10, atkMod: 3, bpMod: 2, ultMult: 2 },
+    rogue:   { name: "Passzív-Agresszív Zsivány", ultName: "Teátrális Szemforgatás",      items: ["Tőr", "Álarc", "Elavult pletykák"], gold: 25, atkMod: 2, bpMod: 0, ultMult: 2 }
+};
+
+const enemies = {
+    gate_guard:       { name: "Zordon Portás-Gólem",               hp: 22, maxHp: 22, atk: 3, gold: 6 },
+    junior_hr:        { name: "Túlbuzgó Junior HR-es",             hp: 20, maxHp: 20, atk: 3, gold: 8 },
+    printer_boss:     { name: "Elakadt Ipari Nyomtató",            hp: 35, maxHp: 35, atk: 4, gold: 12 },
+    ticket_inspector: { name: "Apatikus BKV-Ellenőr-Gólem",        hp: 28, maxHp: 28, atk: 5, gold: 10 },
+    archive_guard:    { name: "Iktatási Takarító-Gólem",           hp: 35, maxHp: 35, atk: 6, gold: 10 },
+    bureaucrat:       { name: "Bürokrata Ügyintéző",               hp: 35, maxHp: 35, atk: 5, gold: 15 },
+    headset_golem:    { name: "Headsetes Ügyfélszolgálatos-Gólem", hp: 26, maxHp: 26, atk: 4, gold: 8 },
+    automat_golem:    { name: "Dühös Kávéautomata-Gólem",          hp: 25, maxHp: 25, atk: 4, gold: 12 },
+    coach_golem:      { name: "Csapatépítő Coach-Gólem",           hp: 32, maxHp: 32, atk: 5, gold: 14 },
+    finance_monster:  { name: "Elszámolási Pótlap-Szörny",         hp: 40, maxHp: 40, atk: 5, gold: 20 },
+    secretary_dragon: { name: "Titkárnő-Sárkány",                  hp: 45, maxHp: 45, atk: 6, gold: 25 },
+    buffet_golem:     { name: "Büfés-Gólem a Kihűlt Menza-Gulyással", hp: 30, maxHp: 30, atk: 4, gold: 10 },
+    number_machine:   { name: "Beragadt Sorszám-Automata",         hp: 30, maxHp: 30, atk: 5, gold: 12 },
+    reboot_golem:     { name: "Újraindítási Hurok Gólem",          hp: 32, maxHp: 32, atk: 5, gold: 14, rebootChance: 0.10 },
+    dark_lord:        { name: "Sötét Nagyúr (A Jövőbeli Önmagad)", hp: 80, maxHp: 80, atk: 9, gold: 100 }
+};
+
+let currentEnemy = null;
+let returnSceneAfterCombat = "";
+let coffeePressure = 0;
+let tempArmor = 0;
+let combatLog = "";
+let typingInterval = null;
+let inCombat = false;
+const KFF_MAX = 30;
+function isDead() { return player.kt <= 0 || player.kff >= KFF_MAX; }
+
+/* ============ SEGÉDFÜGGVÉNYEK ============ */
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+let alertCallback = null;
+let promptCallback = null;
+
+function customAlert(message, callback) {
+    document.getElementById("customAlertText").innerText = message;
+    document.getElementById("customAlertModal").style.display = "flex";
+    alertCallback = callback || null;
+}
+function closeCustomAlert() {
+    document.getElementById("customAlertModal").style.display = "none";
+    if (alertCallback) { const cb = alertCallback; alertCallback = null; cb(); }
+}
+function customPrompt(message, defaultValue, callback) {
+    document.getElementById("customPromptText").innerText = message;
+    const inputField = document.getElementById("customPromptInput");
+    inputField.value = defaultValue || "";
+    document.getElementById("customPromptModal").style.display = "flex";
+    inputField.focus();
+    promptCallback = callback;
+}
+function submitCustomPrompt(isConfirmed) {
+    document.getElementById("customPromptModal").style.display = "none";
+    const val = document.getElementById("customPromptInput").value.trim();
+    if (promptCallback) { const cb = promptCallback; promptCallback = null; cb(isConfirmed ? val : null); }
+}
+document.getElementById("customPromptInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") submitCustomPrompt(true);
+});
+
+function markTaskDone(taskId) {
+    const task = journalTasks.find(t => t.id === taskId);
+    if (task) task.done = true;
+}
+
+/* ============ KARAKTERALKOTÁS ============ */
+function startCharacterCreation() {
+    document.getElementById("story-text").innerHTML =
+        `<strong>Karakteralkotás - 1. Lépés: Válaszd ki a Fajodat!</strong><br><br>Válaszd ki a hivatalos származásodat:`;
+    const optionsContainer = document.getElementById("options");
+    optionsContainer.innerHTML = "";
+    const sv = getSave();
+    if (sv) {
+        const cb = document.createElement("button");
+        cb.classList.add("btn-ult");
+        cb.innerText = ` 📂 Folytatás: ${sv.player.name} (${sv.player.raceName}, ${sv.player.className}), ${sv.player.chapter}. fejezet, KT ${sv.player.kt}, KFF ${sv.player.kff}`;
+        cb.onclick = () => loadGame();
+        optionsContainer.appendChild(cb);
+    }
+    const rb = document.createElement("button");
+    rb.innerText = " 🏆 Eredménytábla megtekintése";
+    rb.onclick = () => openRecords();
+    optionsContainer.appendChild(rb);
+    Object.keys(races).forEach(rKey => {
+        const r = races[rKey];
+        const btn = document.createElement("button");
+        btn.classList.add("btn-tactical");
+        btn.innerText = ` 🔵 [${r.name}] Kezdő KT: ${r.kt} | Képesség: ${r.bonus}`;
+        btn.onclick = () => selectRace(rKey);
+        optionsContainer.appendChild(btn);
+    });
+}
+
+function selectRace(rKey) {
+    player.raceKey = rKey;
+    player.raceName = races[rKey].name;
+    player.stats = { ...races[rKey].stats };
+    player.maxKt = races[rKey].kt + 3 * player.stats.fiz;   // Fizikum: +3 KT / pont
+    player.kt = player.maxKt;
+    player.atk = races[rKey].atk + player.stats.ero;        // Erő: +1 sebzés / pont
+
+    document.getElementById("story-text").innerHTML =
+        `<strong>Karakteralkotás - 2. Lépés: Válaszd ki a Kasztodat!</strong><br><br>Fajod: <span class="text-blue">${player.raceName}</span>. Milyen munkakörben dolgozol?`;
+    const optionsContainer = document.getElementById("options");
+    optionsContainer.innerHTML = "";
+    Object.keys(classes).forEach(cKey => {
+        const c = classes[cKey];
+        const btn = document.createElement("button");
+        btn.classList.add("btn-combat");
+        btn.innerText = ` 🔴 [${c.name}] Kezdő felszerelés: ${c.items.join(", ")} | Kezdő Arany: ${c.gold}`;
+        btn.onclick = () => selectClass(cKey);
+        optionsContainer.appendChild(btn);
+    });
+}
+
+function selectClass(cKey) {
+    player.classKey = cKey;
+    player.className = classes[cKey].name;
+    const cData = classes[cKey];
+    player.gold = cData.gold + races[player.raceKey].goldBonus;
+    player.atk += cData.atkMod;
+    player.bp += cData.bpMod;
+    cData.items.forEach(it => addItem(it));
+
+    customPrompt("Adja meg a hivatalos Munkavállalói Neved:", "Hivatali Kalandor", (nameInput) => {
+        player.name = nameInput ? nameInput : "Hivatali Kalandor";
+        document.getElementById("p-name").textContent = player.name;
+        document.getElementById("p-race").textContent = player.raceName;
+        document.getElementById("p-class").textContent = player.className;
+        document.getElementById("stats-panel").style.display = "flex";
+        document.getElementById("form-name").value = player.name;
+        deliverEmail(true);
+        updateUI();
+        goToScene("office_intro");
+    });
+}
+
+/* ============ TÖRTÉNET ============ */
+function spendGold(n) {
+    if (player.gold < n) { showToast(`Nincs elég ÁFA-s Aranyad (${n} kell)!`); return false; }
+    changeStats(0, 0, -n, 0);
+    return true;
+}
+function stay(key) { goToScene(key, true); }   // újrarajzolás fejezetváltás nélkül
+function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+}
+function lastMailWord() {
+    const m = player.emails[player.emails.length - 1];
+    return (m.subject.split(/\s+/)[0] || "").replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+/* ============ ÁTKÖTÉSEK: érkezési szövegek és előretekintő jelzések ============ */
+const BRIDGES = {
+    office_hub: {
+        office_intro: "Elfogadtad a feladatot. A kollégák már a falhoz húzódnak, te pedig a 32/B-vel a kezedben kilépsz az irodából a főfolyosóra.",
+        printer_win: "A nyomtató füstölög mögötted. A kezedben friss pecséttel visszatérsz a folyosóra.",
+        printer_cleared: "Becsukod a Nyomtatószoba ajtaját, és visszatérsz a folyosóra.",
+        printer_room: "Úgy döntesz, a nyomtatóval ráér később. Visszatérsz a folyosóra.",
+        "*": "Visszatérsz az Irodaház főfolyosójára."
+    },
+    printer_room: "A folyosó végén ózon- és tintaszag árad az ajtón. A Nyomtatószoba ajtaja résnyire nyitva áll, belülről vörös fény villog.",
+    office_buffet: "A lépcsőház a földszinti büfé felé vezet. A Porta csak azon keresztül érhető el, a levegőben hideg gulyás- és szakszervezeti plakátszag.",
+    office_gate: "A büfé hátsó ajtaján át a Portához érsz. A forgóajtó már látszik, előtte a Portás-Gólem sötét körvonala.",
+    city_street: "Az Irodaház forgóajtaja becsapódik mögötted. A város zaja azonnal elnyel, a Fekete Torony pedig messziről figyel.",
+    city_subway: "Az utcai útjelző tábla két irányt mutat a Torony felé. Te az aluljárót választod, ahol a levegő állott és a világítás pislákol.",
+    city_avenue: "Te a felszínen maradsz, a Bürokraták Sugárútját választod. A kirakatokon mind 'Zárva – leltár miatt' tábla lóg.",
+    city_waitroom: {
+        city_subway: "Az aluljáró túlsó kijáratán kilépve egy üvegportál tűnik fel: 'Okmány- és Engedélyezési Főosztály – Városi Kirendeltség'. A Toronyba csak innen lehet bejutni.",
+        city_avenue: "A sugárút végén egy üvegportál tűnik fel: 'Okmány- és Engedélyezési Főosztály – Városi Kirendeltség'. A Toronyba csak innen lehet bejutni.",
+        "*": "Egy üvegportál tűnik fel: 'Okmány- és Engedélyezési Főosztály – Városi Kirendeltség'. A Toronyba csak innen lehet bejutni."
+    },
+    tower_arrival: "A váróteremből kilépsz a C-302-es sorszámmal a kezedben. A Fekete Torony kapuja kitárul előtted.",
+    tower_reception: "A forgóajtón át az előcsarnokba lépsz. A hűvös márványpadlón a lépteid visszhangoznak, a recepciós pult mögött senki sem ül.",
+    tower_lift: {
+        lift_fail: "Visszalöknek a liftbe. A gombok felirata ugyanaz, a cetli is ugyanúgy ott ragad.",
+        "*": "A sorszámod végre elhangzik ('technikai okokból elégséges'). A recepció a Szolgálati Lift felé mutat, az ajtó már résnyire nyitva."
+    },
+    openspace: "A lift csilingel, az ajtó kinyílik. Zaj, headsetek, száz asztal: ez az emelet, amelyhez a tiltó matrica tartozott.",
+    meeting_1: "Átvágtál az Irodatéren. A túloldalon egy ajtó nyílik a Tárgyalók folyosójára.",
+    meeting_2: "Az ajtó újabb tárgyalóba nyílik. Ugyanazok a kollégák ülnek benne, de a napirend (állítólag) más.",
+    meeting_3: "Még egy ajtó, még egy tárgyaló. Már nem vagy biztos benne, melyik jegyzőkönyv szerint jártál itt.",
+    lab_level_1: {
+        home_portal: "A lépcsőházban megvárod, hogy az Irattári Részleg nehéz vasajtaja kinyíljon. Odabent kattogó fénycsövek fogadnak.",
+        home_office: "A hívás véget ér, a portál kidob a lépcsőházba. Előtted az Irattári Részleg nehéz vasajtaja, mögötte poros sötétség.",
+        lab_loop: "A csapóajtók visszadobtak az 1. szintre. Itt kezdhetsz mindent elölről.",
+        "*": "Az Irattári Részleg nehéz vasajtaja kinyílik előtted."
+    },
+    lab_level_2: "A 101-es ajtó mögött lépcső vezet lefelé. A fénycsövek már kihunytak, de a papírpor még világít.",
+    lab_level_3: "A HR szekció folyosója végén szűk lépcső visz tovább. Az aktatornyok itt már a plafont tartják.",
+    lab_level_4: {
+        lab_it_helpdesk: "Az IT-szoba ajtaja halkan becsukódik mögötted. Mögötte vaslépcső vezet lefelé a 4. szintre.",
+        "*": "A jobb oldali csapóajtó mögött lépcső vezet lefelé a 4. szintre."
+    },
+    lab_level_5: "A Selejtező csapdáján túl egy keskeny feljáró vezet a legfelső szintre. A korlát hideg, a mennyezet közelebb van.",
+    tower_canteen: "A Kérvényezési Osztály ajtaján kilépve a folyosón megérzed az ismerős illatot: tegnapi menü. A Kantin ajtaja nyitva áll.",
+    fire_drill: "A Kantin hátsó ajtaja a Tűzvédelmi Folyosóra nyílik. Alig lépsz be, felüvölt a sziréna, a falon pedig három tábla jelenik meg.",
+    union_office: "A tűzriadó elültével a folyosó a Szakszervezeti Iroda ajtajához vezet. A kilincs előtt fénymásolt zászló lóg.",
+    team_building: "A Titkár hátsó kijárat felé mutat: 'Kötelező szabadidős program. Mindenkinek. Önként.' Az ajtó mögött fák és tábortűz-füst van.",
+    hr_training: {
+        team_building: "A kirándulásról egy tárgyalóbusz visz vissza a Toronyba. A HR Tréningterem ajtaján már kiszűrődik a taps.",
+        "*": "A HR Tréningterem ajtaján kiszűrődik a taps."
+    },
+    annual_review: "A Coach-Gólem elenged, de az ajtóban egy Értékelési Referens áll: 'Mielőtt továbbmegy, egy rövid kérdőív.'",
+    it_room: "Az értékelés után a folyosó végén a Szerverszoba hűvös levegője csap meg. A kábelek mind egy villogó monitor felé futnak.",
+    finance: "A szerverszoba mögött teherlift visz a Pénzügyi szintre. A padlón elveszett pótlapok hevernek.",
+    audit: "A Pénzügy mögötti ajtón felirat áll: 'Belső Ellenőrzés – belépés kizárólag nyilatkozattal'.",
+    legal: "Az Auditor-Gólem aláírta a jegyzőkönyvet. Mögötte kinyílik a Jogi Csoport nehéz tölgyfa ajtaja.",
+    tower_warehouse: "A bírónő kikísér. A folyosó végén áll a Beszerzési Raktár: polcai a plafonig érnek, a kapuján 'Rendelés alatt' tábla lóg.",
+    secretariat: "A Selejtezési Bizottság elenged. A Raktár hátsó ajtaja a Vezérigazgatói Titkárság előszobájába nyílik.",
+    tower_gate: {
+        ceo_lift: "A lift az utolsó emeleten megáll. Az ajtó nyílik, és egy ívelt folyosó végén ott áll a Trónterem kapuja.",
+        "*": "Az ívelt folyosó végén ott áll a Trónterem kapuja."
+    },
+    dark_lord_chamber: "A kapu szárnyai csendesen szétnyílnak. A terem hideg és üres, kivéve a trónt, amelyen valaki ül."
+};
+
+const NEXT_HINT = {
+    office_buffet: "🧭 A büfé túlsó ajtaja a Portára vezet.",
+    office_gate: "🧭 A forgóajtó mögött az utca, és messze, a város túlsó végén a Fekete Torony.",
+    city_street: "🧭 Két út vezet a Torony felé: az Aluljáró és a Bürokraták Sugárútja. Mindkettő a Városi Kirendeltséghez ér.",
+    city_subway: "🧭 Az aluljáró túlsó kijárata a Városi Kirendeltség felé vezet.",
+    city_avenue: "🧭 A sugárút végén a Városi Kirendeltség üvegportálja látszik.",
+    city_waitroom: "🧭 A C-302-es sorszámmal kinyílik a Torony kapuja.",
+    tower_arrival: "🧭 Bent az előcsarnokban a Recepció, utána a Szolgálati Lift visz tovább.",
+    tower_reception: "🧭 Ha sorra kerülsz, a Szolgálati Lift visz a Torony belsejébe.",
+    openspace: "🧭 Az Irodatér túloldalán a Tárgyalók ajtaja vár.",
+    meeting_1: "🧭 A Tárgyaló túlsó ajtaja a következő értekezletre nyílik (1/3).",
+    meeting_2: "🧭 Már csak egy értekezlet van hátra (2/3).",
+    meeting_3: "🧭 Az ajtó résnyire nyitva maradt, mögötte ismeretlen folyosó: a Home Office Dimenzió portálja.",
+    lab_level_1: "🧭 Az Irattári Részleg 5 szintjén kell átvágnod, a cél a legfelső szinten a Kérvényezési Osztály.",
+    lab_level_2: "🧭 Még három szint van hátra.",
+    lab_level_3: "🧭 Még két szint van hátra, de előbb az iktatókapu ellenőrzi, ki léphet tovább.",
+    lab_level_4: "🧭 Az utolsó, 5. szint következik.",
+    lab_level_5: "🧭 A jó ajtó a Kérvényezési Osztályra vezet, a Torony közepére.",
+    bureaucracy_dept: "🧭 A pecséttel a kezedben a Kantin felé vezet az út.",
+    tower_canteen: "🧭 A Kantin hátsó ajtaja a Tűzvédelmi Folyosóra nyílik.",
+    fire_drill: "🧭 Bármelyik táblát követed, a menekülés a Szakszervezeti Irodához vezet.",
+    union_office: "🧭 A Titkár a hátsó kijárat felé mutat: ott a Csapatépítő Hétvége helyszíne.",
+    team_building: "🧭 A kirándulásról busz visz vissza a HR Tréningterembe.",
+    hr_training: "🧭 A Tréningterem mögött az Évi Teljesítményértékelés vár.",
+    it_room: "🧭 A kód után a Pénzügyi szintre vezet a teherlift.",
+    finance: "🧭 Az elszámolás után a Belső Ellenőrzés következik.",
+    audit: "🧭 A jegyzőkönyv után a Jogi Csoport tárgyalója vár.",
+    legal: "🧭 Az ítélet után a Beszerzési Raktár következik.",
+    secretariat: "🧭 Ha átjutsz, a Tetőterasz lépcsője következik.",
+    ceo_lift: "🧭 A lift a Trónterem kapujához visz."
+};
+function getBridge(key, prev) {
+    const b = BRIDGES[key];
+    if (!b) return "";
+    if (typeof b === "string") return b;
+    return b[prev] || b["*"] || "";
+}
+
+/* ============ ÚJ RENDSZEREK: TÁRSAK, TÁRGYAK, MENTÉS, REKORDOK ============ */
+const COMPANIONS = {
+    intern: { name: "Mindig Szabadságon Lévő Gyakornok", short: "Gyakornok", desc: "Harc közben 35% eséllyel 'szabadságáról' beszól egy hivatalos levelet: 3 sebzés az ellenfélnek." },
+    ghost:  { name: "Kávéfőző-Szellem",                  short: "Kávéfőző-Szellem", desc: "Minden megnyert harc után +3 KT, és 20% eséllyel gőzfelhőbe burkol: a bekapott sebzés fele." }
+};
+const PROTECTED_ITEMS = ["32/B Nyomtatvány", "Hivatali Pecsét", "Végső Pecsét"];
+
+function hasItem(n) { return player.inventory.includes(n); }
+function removeItem(n) { player.inventory = player.inventory.filter(i => i !== n); updateUI(); }
+function statCheck(stat, base) {
+    const c = Math.min(90, Math.max(25, base + 15 * player.stats[stat]));
+    return Math.random() * 100 < c;
+}
+function useSeal() {
+    removeItem("Végső Pecsét");
+    showToast("🔏 A Végső Pecsét elhasználódott. (Egyszer használatos.)");
+}
+function hasPraiseReplied() { return player.emails.some(e => e.special === "halve" && e.replied); }
+
+/* ---- Tűzfal-Mastermind ---- */
+const MM_MAX = 8;
+function mmStart() {
+    const code = [];
+    for (let i = 0; i < 4; i++) code.push(1 + Math.floor(Math.random() * 6));
+    player.flags.mm = { code: code, tries: [] };
+}
+function mmScore(code, guess) {
+    let exact = 0; const cc = {}, gc = {};
+    for (let i = 0; i < 4; i++) {
+        if (code[i] === guess[i]) exact++;
+        else { cc[code[i]] = (cc[code[i]] || 0) + 1; gc[guess[i]] = (gc[guess[i]] || 0) + 1; }
+    }
+    let wrong = 0;
+    for (const k in cc) wrong += Math.min(cc[k], gc[k] || 0);
+    return { exact: exact, wrong: wrong };
+}
+function mmGuess(raw) {
+    const g = (raw || "").replace(/\s/g, "");
+    if (!/^[1-6]{4}$/.test(g)) { showToast("Érvénytelen kód: pontosan 4 számjegy kell, 1-től 6-ig."); stay("it_firewall"); return; }
+    const guess = g.split("").map(Number);
+    const mm = player.flags.mm;
+    const r = mmScore(mm.code, guess);
+    mm.tries.push({ g: guess, exact: r.exact, wrong: r.wrong });
+    if (r.exact === 4) {
+        const n = mm.tries.length;
+        const fast = n <= 4;
+        const gold = fast ? 15 : 8, kff = fast ? -2 : -1;
+        player.flags.mm = null;
+        if (changeStats(0, kff, gold, 0)) customAlert(
+            `A tűzfal feladja: 'ACCESS GRANTED. (Ez a kód sosem volt titkos.)' ${n} próbából sikerült.\n${fast ? "Villámgyors kódtörés" : "Lassú, de iktatható kódtörés"}: +${gold} arany, ${kff} KFF.`,
+            () => goToScene("finance"));
+    } else if (mm.tries.length >= MM_MAX) {
+        const code = mm.code.join("");
+        player.flags.mm = null;
+        if (changeStats(-3, 2, 0, 0)) customAlert(
+            `A tűzfal kiír: 'TÚL SOK ÉRVÉNYTELEN KÍSÉRLET.' A helyes kód ${code} volt. A rendszer megsértődik. (-3 KT, +2 KFF)`,
+            () => goToScene("finance"));
+    } else {
+        stay("it_firewall");
+    }
+}
+function mmSarcasm(t) {
+    if (t.exact === 0 && t.wrong === 0) return "A rendszer még nevetni sem hajlandó.";
+    if (t.exact === 3) return "Szinte! (A 'szinte' nem iktatható.)";
+    if (t.exact + t.wrong === 4 && t.exact === 0) return "Jó számok, rossz sorrend. Mint egy átszervezés.";
+    return "Beérkezett, nyilvántartásba véve.";
+}
+
+/* ---- Kávéautomata-póker ---- */
+const P_SUITS = ["♠", "♥", "♦", "♣"];
+const P_RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+const POKER_STAKE = 4, POKER_MAX_HANDS = 4;
+function cardStr(c) { return P_RANKS[c.r] + P_SUITS[c.s]; }
+function pokerDeal() {
+    const deck = [];
+    for (let s = 0; s < 4; s++) for (let r = 0; r < 13; r++) deck.push({ r: r, s: s });
+    const d = shuffle(deck);
+    const hand = d.splice(0, 5);
+    return { deck: d, hand: hand, hold: [false, false, false, false, false], phase: "hold", result: "" };
+}
+function pokerEval(hand) {
+    const ranks = hand.map(c => c.r).sort((a, b) => a - b);
+    const flush = hand.every(c => c.s === hand[0].s);
+    const uniq = new Set(ranks).size === 5;
+    const straight = uniq && (ranks[4] - ranks[0] === 4 || (ranks[4] === 12 && ranks[0] === 0 && ranks[3] === 3));
+    const cnt = {};
+    ranks.forEach(r => cnt[r] = (cnt[r] || 0) + 1);
+    const vals = Object.values(cnt).sort((a, b) => b - a);
+    if (straight && flush) return { name: "Színsor", pay: 120 };
+    if (vals[0] === 4) return { name: "Póker", pay: 60 };
+    if (vals[0] === 3 && vals[1] === 2) return { name: "Full", pay: 36 };
+    if (flush) return { name: "Szín", pay: 24 };
+    if (straight) return { name: "Sor", pay: 20 };
+    if (vals[0] === 3) return { name: "Drill", pay: 14 };
+    if (vals[0] === 2 && vals[1] === 2) return { name: "Két pár", pay: 10 };
+    if (vals[0] === 2) return { name: "Pár", pay: 4 };
+    return { name: "Semmi", pay: 0 };
+}
+function pokerStart() {
+    if (!spendGold(POKER_STAKE)) return;
+    player.flags.pokerHands = (player.flags.pokerHands || 0) + 1;
+    player.flags.poker = pokerDeal();
+    stay("buffet_poker");
+}
+function pokerToggle(i) {
+    const p = player.flags.poker;
+    if (!p || p.phase !== "hold") return;
+    p.hold[i] = !p.hold[i];
+    stay("buffet_poker");
+}
+function pokerDraw() {
+    const p = player.flags.poker;
+    if (!p || p.phase !== "hold") return;
+    for (let i = 0; i < 5; i++) if (!p.hold[i]) p.hand[i] = p.deck.shift();
+    p.phase = "done";
+    const ev = pokerEval(p.hand);
+    let msg = `Kéz: ${ev.name}. `;
+    let kt = 0, kff = 0;
+    if (ev.pay > 0) {
+        msg += ev.pay === POKER_STAKE ? `A tét visszajár (${ev.pay} arany).` : `Nyeremény: ${ev.pay} arany!`;
+    } else {
+        const roll = Math.random();
+        if (roll < 0.08) { msg += "Vesztettél, de az automata megsajnál és kiköp egy ingyen kávét. (+3 KT)"; kt = 3; }
+        else if (roll < 0.20) { msg += "Vesztettél. A kijelzőn: 'ERR_0x4B: Kávé nem található.' (+1 KFF)"; kff = 1; }
+        else msg += "Vesztettél. A gép udvariasan megköszöni a tétet.";
+    }
+    p.result = msg;
+    if (changeStats(kt, kff, ev.pay, 0)) stay("buffet_poker");
+}
+
+/* ---- Home Office Dimenzió ---- */
+const HO_EVENTS = [
+    { title: "A szomszéd fúrógépe", text: "A szomszéd pont most kezd falat fúrni. A csoportos hívásban mindenki hallgatja a hangot, és mindenki úgy tesz, mintha nem.",
+      opts: [ { t: " 🔇 Némítod magad és komoly arccal bólogatsz (Ügyesség)", stat: "ugy" },
+              { t: " 🔨 Visszaütsz a falra egy papucssal (Erő)", stat: "ero" },
+              { t: " 📹 Bekapcsolod a kamerát, hogy lássák, hogy dolgozol", cam: true } ],
+      win: "Sikerült. Senki sem tudja, hogy a fúrás a te falaidból jön.", lose: "A mikrofon közben mégis élt. A fúrógép hangja a nevedet kapta a jegyzőkönyvben." },
+    { title: "A macska a billentyűzeten", text: "A macskád a billentyűzetre fekszik, és 'jjjjjjjjjjjjjjjjj' sort küld a vezetőségnek.",
+      opts: [ { t: " 🐈 Kitartasz mellette, mint egy stratégiai szünet mellett (Fizikum)", stat: "fiz" },
+              { t: " 💬 Beírod a chatbe: 'Kérem a macskát jegyzőkönyvezni' (Ész)", stat: "esz" },
+              { t: " 📹 Kamerába mutatod a macskát, hogy lássák", cam: true } ],
+      win: "A macska 'jelenléti ívnek' minősül. Mindenki elfogadja.", lose: "A macska megsértődik, és a hívás közepén teljes hangerővel mondja el a véleményét." },
+    { title: "„Kamera be!”", text: "A hívásvezető megkéri az összes résztvevőt, hogy kapcsolja be a kamerát. Aki még nem tette, az hallgatólagosan felmondott.",
+      opts: [ { t: " 💬 Beírod: 'Rossz a kamerám, de a szándék megvan' (Ész)", stat: "esz" },
+              { t: " 🖼️ Háttérképként üres irodát állítasz be, és a kamera 'bekapcsolva' (Ügyesség)", stat: "ugy" },
+              { t: " 📹 Bekapcsolod a kamerát. A pizsama is megjelenik.", cam: true } ],
+      win: "A hívásvezető bólint: 'Rendben, a szándék számít.' Senki sem tudja, mit mondott.", lose: "A kamerád 'nem található'. Azonnal feljegyzik, hogy 'nincs együttműködés'." }
+];
+function hoState() {
+    if (!player.flags.ho) player.flags.ho = { round: 0, cam: 0, log: [], done: false };
+    return player.flags.ho;
+}
+function hoChoose(i) {
+    const ho = hoState();
+    if (ho.round >= HO_EVENTS.length) return;
+    const ev = HO_EVENTS[ho.round];
+    const o = ev.opts[i];
+    let kt = 0, kff = 0, line;
+    if (o.cam) { ho.cam++; kt = -2; kff = 2; line = "📹 Kamera be! (-2 KT, +2 KFF)"; }
+    else if (statCheck(o.stat, 50)) line = "✅ " + ev.win;
+    else { kt = -2; kff = 1; line = "❌ " + ev.lose + " (-2 KT, +1 KFF)"; }
+    ho.log.push(ev.title + ": " + line);
+    ho.round++;
+    if (!changeStats(kt, kff, 0, 0)) return;
+    if (ho.round >= HO_EVENTS.length && !ho.done) {
+        ho.done = true;
+        if (ho.cam === 0) {
+            player.bp += 1; addItem("Home Office Pizsama (+1 BP)");
+            if (!changeStats(0, -2, 8, 0)) return;
+            ho.log.push("🏅 Kamera nélkül túlélted a három hívást: +8 arany, -2 KFF, Home Office Pizsama (+1 BP).");
+        } else ho.log.push("A kamerád " + ho.cam + "x bekapcsolt. Jutalom nincs, a jelenlét viszont dokumentált.");
+    }
+    stay("home_office");
+}
+
+/* ---- Évi Teljesítményértékelés ---- */
+const REVIEW_QS = [
+    { q: "„Hol látja magát öt év múlva?”", opts: [
+        { t: " 💺 'Az Ön székében.' (Erő)", stat: "ero" },
+        { t: " 🚪 'Egy másik cégnél, de ezt ne iktassák.' (Ügyesség)", stat: "ugy" },
+        { t: " 🙂 'Ugyanitt, de boldogan.' (Ész)", stat: "esz" } ] },
+    { q: "„Mi a legnagyobb gyengesége?”", opts: [
+        { t: " 📏 'A túlzott precizitás.' (Ész)", stat: "esz" },
+        { t: " 🛡️ 'Nem tudok elfáradni. Akkor is, amikor kellene.' (Fizikum)", stat: "fiz" },
+        { t: " 📅 'A határidők. És a Határidők.' (Ügyesség)", stat: "ugy" } ] },
+    { q: "„Hogyan kezeli a konfliktusokat?”", opts: [
+        { t: " ✉️ 'Írásban, három példányban.' (Ész)", stat: "esz" },
+        { t: " 🧍 'Fizikai jelenléttel.' (Erő)", stat: "ero" },
+        { t: " 🧘 'Kibírom, amíg a másik fel nem adja.' (Fizikum)", stat: "fiz" } ] }
+];
+function reviewState() {
+    if (!player.flags.rv) player.flags.rv = { q: 0, score: 0, grade: "" };
+    return player.flags.rv;
+}
+function reviewMailScore() {
+    const total = player.emails.filter(e => !e.special).length;
+    if (!total) return 3;
+    const replied = player.emails.filter(e => !e.special && e.replied).length;
+    return Math.round(3 * replied / total);
+}
+function reviewAnswer(i) {
+    const rv = reviewState();
+    const o = REVIEW_QS[rv.q].opts[i];
+    rv.score += Math.max(0, Math.min(3, 1 + player.stats[o.stat]));
+    rv.q++;
+    if (rv.q >= REVIEW_QS.length) {
+        rv.mail = reviewMailScore();
+        rv.score += rv.mail;
+        if (rv.score >= 9) rv.grade = "great";
+        else if (rv.score >= 5) rv.grade = "ok";
+        else rv.grade = "bad";
+        if (rv.grade === "great") {
+            player.atk += 1; addItem("Végső Pecsét");
+            if (!changeStats(0, -3, 0, 0)) return;
+        } else if (rv.grade === "ok") {
+            if (!changeStats(0, -1, 5, 0)) return;
+        } else {
+            if (!changeStats(-3, 2, 0, 0)) return;
+        }
+    }
+    stay("annual_review");
+}
+
+/* ---- Raktár-Selejtezés ---- */
+function waState() {
+    if (!player.flags.wa) {
+        const eligible = shuffle(player.inventory.filter(i => !PROTECTED_ITEMS.includes(i)));
+        player.flags.wa = { items: eligible.slice(0, 3), i: 0, lost: 0 };
+    }
+    return player.flags.wa;
+}
+function waStep(kind) {
+    const wa = waState();
+    const item = wa.items[wa.i];
+    let kff = 0, gold = 0, lost = false, msg = "";
+    if (kind === "prove") {
+        if (statCheck("esz", 50)) msg = `A Bizottság elfogadja az igazolásodat: a(z) '${item}' marad.`;
+        else { lost = true; kff = 1; msg = `'A nyilatkozat hiányos.' A(z) '${item}' selejtezve. (+1 KFF)`; }
+    } else if (kind === "scrap") {
+        lost = true; gold = 4; msg = `A(z) '${item}' papíron selejtezve. Kapsz 4 arany jóváírást.`;
+    } else {
+        if (statCheck("ugy", 45)) msg = `Észrevétlenül elrejted a(z) '${item}' tárgyat a táskád aljára. Marad.`;
+        else { lost = true; kff = 1; msg = `A rejtegetést felfedezik: a(z) '${item}' selejtezve, a nyilatkozatot pótolni kell. (+1 KFF)`; }
+    }
+    if (lost) { removeItem(item); wa.lost++; }
+    wa.i++;
+    showToast(msg);
+    if (!changeStats(0, kff, gold, 0)) return;
+    if (wa.i >= wa.items.length && wa.items.length > 0 && wa.lost === 0 && !wa.sealGiven) {
+        wa.sealGiven = true;
+        addItem("Végső Pecsét");
+        showToast("🔏 Hibátlan elszámolás! A Bizottság átad egy Végső Pecsétet.");
+    }
+    stay("warehouse_audit");
+}
+
+/* ---- Mentés / rekordok ---- */
+const SAVE_KEY = "adventower_save_v1";
+const REC_KEY = "adventower_records_v1";
+let currentSceneKey = "";
+let restoring = false;
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+function saveGame(manual) {
+    if (manual && inCombat) { showToast("Harc közben nem lehet menteni."); return; }
+    if (!currentSceneKey || isDead() || currentSceneKey === "game_over" || currentSceneKey.startsWith("ending_")) {
+        if (manual) showToast("Itt most nem lehet menteni.");
+        return;
+    }
+    const data = { v: 1, scene: currentSceneKey, player: player,
+        tasks: journalTasks.map(t => ({ id: t.id, done: t.done })), emailCursor: emailCursor, ts: Date.now() };
+    const ok = lsSet(SAVE_KEY, JSON.stringify(data));
+    if (manual) showToast(ok ? "💾 Játékállás mentve." : "A mentés nem sikerült (a böngésző tiltja a tárolást).");
+}
+function getSave() {
+    const raw = lsGet(SAVE_KEY);
+    if (!raw) return null;
+    try { const d = JSON.parse(raw); return (d && d.v === 1 && storyData[d.scene] && d.player) ? d : null; } catch (e) { return null; }
+}
+function loadGame() {
+    const d = getSave();
+    if (!d) { showToast("Nincs betölthető mentés."); return; }
+    Object.assign(player, d.player);
+    d.tasks.forEach(s => { const t = journalTasks.find(x => x.id === s.id); if (t) t.done = s.done; });
+    emailCursor = d.emailCursor || 0;
+    document.getElementById("p-name").textContent = player.name;
+    document.getElementById("p-race").textContent = player.raceName;
+    document.getElementById("p-class").textContent = player.className;
+    document.getElementById("stats-panel").style.display = "flex";
+    document.getElementById("form-name").value = player.name;
+    updateUI();
+    restoring = true;
+    try { goToScene(d.scene, true); } finally { restoring = false; }
+}
+function clearSave() { lsDel(SAVE_KEY); }
+
+function loadRecords() {
+    try { const a = JSON.parse(lsGet(REC_KEY) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function recordRun(ending, ok) {
+    if (player.flags.recorded) return;
+    player.flags.recorded = true;
+    const arr = loadRecords();
+    arr.push({ name: player.name, race: player.raceName, cls: player.className, ending: ending, ok: ok,
+        chapter: player.chapter, kff: player.kff, kt: player.kt, gold: player.gold,
+        replied: player.emails.filter(e => e.replied).length, mails: player.emails.length, ts: Date.now() });
+    lsSet(REC_KEY, JSON.stringify(arr.slice(-80)));
+}
+function openRecords() {
+    const arr = loadRecords();
+    const wins = arr.filter(r => r.ok).sort((a, b) => a.kff - b.kff || a.chapter - b.chapter || b.kt - a.kt).slice(0, 10);
+    const other = arr.length - arr.filter(r => r.ok).length;
+    let html = "";
+    if (!wins.length) html = "<p>Még nincs teljesített futam az eredménytáblán. (Kiégni nem érdem.)</p>";
+    else {
+        html = `<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+            <tr style="color:#f9e2af; text-align:left;"><th>#</th><th>Név</th><th>Befejezés</th><th>KFF</th><th>Fej.</th><th>KT</th><th>Levél</th></tr>` +
+            wins.map((r, i) => `<tr style="border-top:1px solid #45475a;"><td>${i + 1}.</td>
+                <td>${escapeHtml(r.name)}<br><span style="color:#a6adc8; font-size:0.75rem;">${escapeHtml(r.race)} ${escapeHtml(r.cls)}</span></td>
+                <td>${escapeHtml(r.ending)}</td><td>${r.kff}</td><td>${r.chapter}</td><td>${r.kt}</td><td>${r.replied}/${r.mails}</td></tr>`).join("") + "</table>";
+    }
+    html += `<p style="margin-top:12px; color:#a6adc8;">Sorrend: legkevesebb KFF, majd legkevesebb fejezet. Egyéb futamok (kiégés, beolvadás): ${other}.</p>`;
+    document.getElementById("records-body").innerHTML = html;
+    document.getElementById("recordsModal").style.display = "flex";
+}
+function closeRecords() { document.getElementById("recordsModal").style.display = "none"; }
+
+const storyData = {
+    office_intro: {
+        text: "Hétfő reggel 8:00. Az Irodaház hangszóróiból megszólal a HR vezető szigorú hangja:\n\n'Figyelem! Az éves kötelező sorsolás lezajlott. A mai napon A KIVÁLASZTOTT nem más, mint... ÖN!'\n\nA kollégák azonnal elhúzódnak mellőled. A feladatod: a kezedbe nyomott '32/B nyomtatványt' el kell juttatnod a város másik végében magasodó Fekete Toronyba!",
+        notes: {
+            inspector: " 🔴 ELLENŐR: Nincs elutasítás! A 32/B kézbesítése törvényi kötelezettség!",
+            veteran: " 🔵 ELŐD: Mielőtt elhagyod az irodát, nézz be a Nyomtatószobába vagy igyál egy kávét!"
+        },
+        options: [
+            { text: " 📜 'Hősi' alázattal elfogadod a feladatot ('Ezért fizetnek...')", target: "office_hub", type: "normal" },
+            { text: " 📑 Megpróbálod átruházni a feladatot a gyakornokra", action: () => {
+                customAlert("A gyakornok azonnal táppénzre ment. Nincs menekvés!", () => goToScene("office_hub"));
+            }, type: "tactical" },
+            { text: " ☕ Először is iszol egy kávét a büfében", action: () => openCoffee(), type: "tactical" }
+        ]
+    },
+
+    office_hub: {
+        text: "Az Induló Irodaház folyosóján állsz. Innen tudsz lemenni a Portára, hogy kijuss a városba.",
+        options: [
+            { text: " 🖨️ Benézel a Nyomtatószobába tintaért és pecsétért", target: "printer_room", type: "tactical" },
+            { text: " 🚪 Lemész a Portára az épület kijáratához (a büfén keresztül)", target: "office_buffet", type: "normal" }
+        ]
+    },
+
+    office_buffet: {
+        text: " 🍽️ A SZAKSZERVEZETI BÜFÉ ÉS AZ EBÉDIDŐ-CSAPDA\n\nMielőtt leérnél a Portára, át kell vágnod az irodai büfén. A Szakszervezeti Büfés-Nő keresztbe fonja a karját: 'Déli 12:00 és 12:30 között a büfé területén és a folyosón a közlekedés szakszervezeti ebédidő miatt szünetel!'\n\nA pult mögött kihűlt menza-gulyás gőzölög (hidegen).",
+        notes: {
+            inspector: " 🔴 ELLENŐR: Az ebédidő szent és sérthetetlen. A másodperc sérthető.",
+            veteran: " 🔵 ELŐD: A büfében prémium kávét is lehet kapni. Később jól jöhet valakinek."
+        },
+        options: [
+            { text: " 🔴 [HARC] Megküzdesz a Kihűlt Menza-Gulyással és a Büfés-Gólemmel!", action: () => startCombat("buffet_golem", "office_gate"), type: "combat" },
+            { text: " ⏳ Vársz 30 percet (-10 perc bürokratikus idő, +1 KFF), közben megeszel egy száraz pogácsát (+4 KT)", action: () => {
+                if (changeStats(4, 1, 0, 0)) customAlert("A pogácsa olyan száraz, hogy a Büfés-Nő is megsajnál. +4 KT, +1 KFF.", () => goToScene("office_gate"));
+            }, type: "tactical" },
+            { text: " 💪 [TÚLMOTIVÁLT EMBER] Meggyőzöd őket, hogy a munka nem várhat!", condition: () => player.raceKey === "human", action: () => {
+                customAlert("'Aki dolgozik, annak nem ebédidő, hanem lehetőség!' A Büfés-Nő megrendül, és kinyitja az oldalajtót.", () => goToScene("office_gate"));
+            }, type: "tactical" },
+            { text: " 🃏 [AUTOMATA] Kávéautomata-póker (4 arany/kör, max 4 kör)", action: () => stay("buffet_poker"), type: "tactical" },
+            { text: " ☕ Prémium kávét vásárolsz (5 arany): később jól jöhet", condition: () => !player.flags.premiumCoffee, action: () => {
+                if (spendGold(5)) { player.flags.premiumCoffee = true; addItem("Prémium Kávé"); showToast("Prémium Kávé a Mappába csatolva."); stay("office_buffet"); }
+            }, type: "tactical" }
+        ]
+    },
+
+    printer_room: {
+        text: "A Nyomtatószobában egy Ipari Nyomtató villog vörösen! A gép piros tintát szivárogtat.",
+        options: [
+            { text: " 🔴 [HARC] Megküzdesz a Nyomtatóval!", action: () => startCombat("printer_boss", "printer_win"), type: "combat" },
+            { text: "Visszalépsz a folyosóra", target: "office_hub", type: "normal" }
+        ]
+    },
+    printer_cleared: {
+        text: "A Nyomtatószoba csendes. A legyőzött gép füstölög a sarokban, itt már nincs több tennivalód.",
+        options: [{ text: "Vissza az Irodaház folyosójára", target: "office_hub", type: "normal" }]
+    },
+    printer_win: {
+        text: "Legyőzted a nyomtatót! A földön találsz egy 'Piros Tinta' patront, a kiköpött lapon pedig ott virít az 'ELLENŐRIZVE' pecsét.",
+        onEnter: () => { player.printerDone = true; addItem("Piros Tinta"); addStamp("ELLENŐRIZVE"); },
+        options: [{ text: " 🔴 Vissza az Irodaház folyosójára", target: "office_hub", type: "normal" }]
+    },
+
+    office_gate: {
+        text: " 🚪 A PORTA\n\nAz Irodaház kijáratánál egy Zordon Portás-Gólem állja utadat, kezében az átpörgetős Vendégkönyvvel.\n\n'Kijelentkezési engedély vagy belépőkártya nélkül senki sem hagyhatja el az épületet munkaidőben!'",
+        notes: {
+            inspector: " 🔴 ELLENŐR: Szigorúan tilos a kapun való átlépés aláírt Vendégkönyv nélkül!",
+            veteran: " 🔵 ELŐD: Írd alá a Vendégkönyvet vagy verekedd át magad rajta!"
+        },
+        options: [
+            { text: " 📝 Aláírod a Vendégkönyvet és igazolod a kiküldetést", action: () => {
+                customAlert("A Portás hosszas hümmögés után felvonja a sorompót.", () => {
+                    markTaskDone("office_gate");
+                    goToScene("city_street");
+                });
+            }, type: "tactical" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány: a Portásnak nincs engedélye az akadályozásra", condition: () => player.stats.esz >= 2, action: () => {
+                customAlert("A Portás-Gólem zavarba jön a formanyomtatványtól, és kinyitja a sorompót.", () => { markTaskDone("office_gate"); goToScene("city_street"); });
+            }, type: "tactical" },
+            { text: " 🔴 [HARC] Átverekedés a Portás-Gólemen!", action: () => startCombat("gate_guard", "gate_win"), type: "combat" },
+            { text: "Visszalépsz az irodai folyosóra", target: "office_hub", type: "normal" }
+        ]
+    },
+    gate_win: {
+        text: "Legyőzted a Portás-Gólemet! Átléped a sorompót és kijutsz az utcára.",
+        onEnter: () => markTaskDone("office_gate"),
+        options: [{ text: "Kilépés a Városba", target: "city_street", type: "normal" }]
+    },
+
+    city_street: {
+        text: "Kilépsz az utcára. A Fekete Torony baljósan magasodik a város túlsó végén. Az út hosszú és bürokratikus csapdákkal teli.",
+        notes: {
+            inspector: " 🔴 ELLENŐR: Használd a tömegközlekedést a haladáshoz!",
+            veteran: " 🔵 ELŐD: Vigyázz a BKV-Ellenőr Gólemmel!"
+        },
+        options: [
+            { text: " 🚌 Felszállsz a Hivatali Járatra (Aluljáró / Tömegközlekedés)", target: "city_subway", type: "normal" },
+            { text: " 🚶 Gyalog vágsz át a Bürokraták Sugárútján", target: "city_avenue", type: "tactical" }
+        ]
+    },
+    city_subway: {
+        text: "Az Aluljáróban egy Apatikus BKV-Ellenőr-Gólem állja utadat: 'Vonaljegyet vagy 32/B mellékletet felmutatni!'",
+        options: [
+            { text: " 🔴 [HARC] Megküzdesz az Ellenőr-Gólemmel!", action: () => startCombat("ticket_inspector", "city_waitroom"), type: "combat" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány: az Ellenőr jegyzőkönyvén nincs hatósági záradék", condition: () => player.stats.esz >= 2, action: () => {
+                customAlert("Az Ellenőr-Gólem kénytelen elismerni a hibás jegyzőkönyvet.", () => goToScene("city_waitroom"));
+            }, type: "tactical" },
+            { text: " 🔵 Felmutatod az ÁFA-s Aranyat megvesztegetésként (5 Arany, Ésszel olcsóbb)", action: () => {
+                const cost = Math.max(2, 5 - player.stats.esz);   // Ész: olcsóbb megvesztegetés
+                if (player.gold >= cost) { changeStats(0, 0, -cost, 0); goToScene("city_waitroom"); }
+                else customAlert(`Nincs elég ÁFA-s Aranyad! (${cost} kell)`);
+            }, type: "tactical" }
+        ]
+    },
+    city_avenue: {
+        text: "A Bürokraták Sugárútján egy Túlbuzgó HR-es ront rád a járdán!",
+        options: [
+            { text: " 🔴 [HARC] Megküzdesz a HR-essel!", action: () => startCombat("junior_hr", "city_waitroom"), type: "combat" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány", condition: () => player.stats.esz >= 2, action: () => {
+                customAlert("Bebizonyítottad, hogy nincs engedélye a támadásra! Harc nélkül továbbjutottál.", () => goToScene("city_waitroom"));
+            }, type: "tactical" }
+        ]
+    },
+    city_waitroom: {
+        text: " 🪑 NYOMTATVÁNYI VÁRÓTEREM (Sorszámhúzó Pokol)\n\nA Fekete Toronyba csak a 'C-302-es Belépési Sorszámmal' lehet belépni, amit az Okmány- és Engedélyezési Főosztály városi kirendeltségén adnak ki. A váróteremben 140 ember ül, a kijelző a B-004-es számnál áll. Mellettetek egy nyugdíjas horkol, a kezében egy sokkal kisebb sorszámmal. A sarokban egy Sorszám-Automata rossz számokat nyomtat és sípol.",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A sorszám nem megvehető, nem cserélhető, nem is létezik.",
+            veteran: " 🔵 ELŐD: Aki vár, az közben dolgozhat: nézd meg a telefonod!"
+        },
+        options: [
+            { text: " 🔄 Sorszámot cserélsz az alvó nyugdíjassal (esély az Ügyességtől függ; egyszer próbálhatod)", condition: () => !player.flags.swapTried, action: () => {
+                player.flags.swapTried = true;
+                const chance = Math.min(85, Math.max(20, 40 + 15 * player.stats.ugy));
+                if (Math.random() * 100 < chance) {
+                    customAlert("Sikerült! A nyugdíjas mormog, de nem ébred fel. A kijelző épp a te sorszámodat kiáltja: azonnal sorra kerülsz.", () => goToScene("tower_arrival"));
+                } else if (changeStats(-3, 1, 0, 0)) {
+                    customAlert("A nyugdíjas felébred, és a sétabotjával kiosztja a sorszámcserét. (-3 KT, +1 KFF)", () => stay("city_waitroom"));
+                }
+            }, type: "tactical" },
+            { text: " 🔴 [HARC] Csatasorba állsz a Sorszám-Automatával, ami rossz számokat nyomtat!", action: () => startCombat("number_machine", "city_waitroom_won"), type: "combat" },
+            { text: " 📱 [E-MAIL AKCIÓ] Amíg vársz, gyorsan megválaszolsz 2 felgyülemlett levelet a telefonodon (levelenként -1 KFF)", condition: () => player.emails.some(m => !m.replied && !m.special), action: () => {
+                const n = answerMails(2);
+                customAlert(`Amíg a sor araszol, megválaszoltál ${n} levelet. A válaszok hibátlan mű-értelmességgel íródtak. (-${n} KFF)\n\nKözben kiszólítják a sorszámodat: C-302.`, () => goToScene("tower_arrival"));
+            }, type: "tactical" }
+        ]
+    },
+    city_waitroom_won: {
+        text: "A Sorszám-Automata utolsó sípolással kiköp egy jegyet: 'C-302'. Az ablaknál azonnal kiszólítanak, mintha mi sem történt volna.",
+        options: [{ text: " 🏯 Belépsz a Torony felé vezető kapun", target: "tower_arrival", type: "normal" }]
+    },
+    tower_arrival: {
+        text: "Sikeresen átvágtál a városon! Megérkeztél a Fekete Torony lábához.\n\nA Torony szintjein át kell vágnod magad a trónteremig: recepción, irodákon, az Irattáron és a felsőbb osztályokon keresztül. Közben a postaládád is gyűlik.",
+        onEnter: () => markTaskDone("city_cross"),
+        options: [{ text: "Belépsz a Torony Recepciójára", target: "tower_reception", type: "normal" }]
+    },
+
+    lab_level_1: {
+        text: " 🏢 IRATTÁRI RÉSZLEG - 1. SZINT: Poros Irattári Sötétség\n\nKattogó fénycsövek világítják meg az V. Részleg bejáratát. Hatalmas aktatornyok között három szürke ajtó áll. Egy sárgult tábla felirata:\n'A páros számok az igazság felé vezetnek, de a selejtezőbe visznek!'",
+        options: [
+            { text: " 🚪 Ajtó 101 (Balra)", target: "lab_level_2", type: "tactical" },
+            { text: " 🚪 Ajtó 102 (Középen)", target: "lab_loop", type: "normal" },
+            { text: " 🚪 Ajtó 103 (Jobbra)", target: "lab_loop", type: "normal" }
+        ]
+    },
+    lab_level_2: {
+        text: " 🏢 IRATTÁRI RÉSZLEG - 2. SZINT: Megsemmisített Akták Szekciója\n\nA levegőben papírpor kering. Egy eldőlt iktatóasztalon kézzel írt jegyzetet találsz:\n'Kövesd a HR szekciót (B épület)!'",
+        options: [
+            { text: " 📂 A-Szárny Folyosó (Gazdasági Részleg)", target: "lab_loop", type: "normal" },
+            { text: " 📂 B-Szárny Folyosó (HR Osztály)", target: "lab_level_3", type: "tactical" },
+            { text: " 📂 C-Szárny Folyosó (Jogi Csoport)", target: "lab_loop", type: "normal" }
+        ]
+    },
+    lab_level_3: {
+        text: " 🏢 IRATTÁRI RÉSZLEG - 3. SZINT: Iktató Központ & Mikrofilmtár\n\nHárom csapóajtó áll előtted. Egy gépies hang susog a fal mögül:\n'A középső út a legrövidebb, de a harmadik a helyes!'",
+        options: [
+            { text: " 🚪 Bal Csapóajtó", target: "lab_loop", type: "normal" },
+            { text: " 🚪 Középső Csapóajtó", target: "lab_loop", type: "normal" },
+            { text: " 🚪 Jobb Csapóajtó", target: "lab_it_helpdesk", type: "tactical" }
+        ]
+    },
+    lab_it_helpdesk: {
+        text: " 🖥️ AZ INFORMATIKAI OSZTÁLY (IT Helpdesk Szakadék)\n\nAz Irattár 3. szintjén az elektronikus iktatókapu lezár. A képernyőn a hírhedt üzenet: 'Helytelen jelszó! Kérjük, lépjen kapcsolatba a Rendszergazdával!'\n\nLeereszkedsz a szerverszobába, ahol az IT-Rendszergazda szörnyeteg téli álmát alussza kávésdobozok és hálózati kábelek között. Fél szemmel rád pillant: 'Biztonsági kérdés...'\n\n(Tipp: a biztonsági kérdés válaszát a Mappa űrlapján adtad meg.)",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A jelszó titkos. A titok jelszó nélkül nem titok.",
+            veteran: " 🔵 ELŐD: A Rendszergazda a kávéért bármit megtesz. Szó szerint."
+        },
+        options: [
+            { text: " ❓ Megválaszolod a biztonsági kérdést: 'Mi volt az első háziállatod neve?'", action: () => {
+                customPrompt("Biztonsági kérdés: Mi volt az első háziállatod neve?", "", (ans) => {
+                    if (ans === null) return;
+                    const pet = (player.petName || "").trim().toLowerCase();
+                    if (pet && ans.trim().toLowerCase() === pet) {
+                        if (changeStats(0, -1, 0, 0)) customAlert("'Helyes.' A Rendszergazda szeme könnybe lábad. A kapu kinyílik. (-1 KFF)", () => goToScene("lab_level_4"));
+                    } else if (!pet) {
+                        if (changeStats(-2, 1, 0, 0)) customAlert("Nem emlékszel, mit írtál be a Mappába, mert még be sem írtál semmit. (Hitelesítsd a 32/B űrlapot!) -2 KT, +1 KFF.", () => stay("lab_it_helpdesk"));
+                    } else if (changeStats(-2, 1, 0, 0)) {
+                        customAlert("'Helytelen.' A Rendszergazda szomorúan megrázza a fejét. (-2 KT, +1 KFF)", () => stay("lab_it_helpdesk"));
+                    }
+                });
+            }, type: "tactical" },
+            { text: " 🔴 [HARC] Megküzdesz az Újraindítási Hurok Gólemmel (10% eséllyel újraindul a harc!)", action: () => startCombat("reboot_golem", "lab_level_4"), type: "combat" },
+            { text: " ☕ [TÁRGY] Odaadod a Prémium Kávét, cserébe átengedi a jelszavadat", condition: () => player.inventory.includes("Prémium Kávé"), action: () => {
+                player.inventory = player.inventory.filter(i => i !== "Prémium Kávé"); updateUI();
+                customAlert("A Rendszergazda megszagolja a kávét. 'Ilyet 2019 óta nem kaptam.' Átadja a jelszót, és visszaalszik. -1 KFF.", () => { changeStats(0, -1, 0, 0); goToScene("lab_level_4"); });
+            }, type: "tactical" }
+        ]
+    },
+    lab_level_4: {
+        text: " 🏢 IRATTÁRI RÉSZLEG - 4. SZINT: A Selejtező Csapdája\n\nEgy Iktatási Takarító-Gólem söpör a sarokban, miközben lejárt kérelmeket darál le. Falra fújt firka:\n'Csak a 404-es ajtó létezik!'",
+        options: [
+            { text: " 🚪 Ajtó 401", target: "lab_loop", type: "normal" },
+            { text: " 🚪 Ajtó 404", target: "lab_level_5", type: "tactical" },
+            { text: " 🔴 [HARC] Megtámadod a Takarító-Gólemet", action: () => startCombat("archive_guard", "lab_level_5"), type: "combat" }
+        ]
+    },
+    lab_level_5: {
+        text: " 🏢 IRATTÁRI RÉSZLEG - 5. SZINT: Felső Iktatási Kijárat\n\nUtolsó akadály! A Kérvényezési Osztály felé vezető lift gombjainál három opció villog.",
+        options: [
+            { text: " 🟩 Zöld Gomb (Iktatás hitelesítése)", target: "bureaucracy_dept", type: "tactical" },
+            { text: " 🟥 Piros Gomb (Vészleállítás)", target: "lab_loop", type: "normal" },
+            { text: " 🟨 Sárga Gomb (Újraindítás)", target: "lab_loop", type: "normal" }
+        ]
+    },
+    lab_loop: {
+        text: " 🌀 ELTÉVEDTÉL AZ IRATTÁRI RÉSZLEGEN!\n\nRossz ajtót választottál, beléptél egy körkörös bürokratikus folyosóra, és a csapóajtók visszadobtak az 1. Szintre! (-3 KT, +1 KFF)",
+        onEnter: () => changeStats(-3, 1, 0, 0),
+        options: [{ text: "Újrapróbálkozás az 1. Szintről", target: "lab_level_1", type: "normal" }]
+    },
+
+    bureaucracy_dept: {
+        text: "Sikeresen átvágtál az V. Szintű Irattári Részleg mind az 5 szintjén!\n\nMegérkeztél a Kérvényezési Osztályra. Az ügyintéző a 'JÓVÁHAGYVA' pecsétet követeli! (Tipp: előbb hitelesítsd a 32/B űrlapot a Mappában.)",
+        onEnter: () => markTaskDone("labyrinth"),
+        options: [
+            { text: " 🔵 Megmutatod a Mappában hitelesített 32/B Űrlapot", condition: () => player.formApproved, action: () => {
+                addStamp("JÓVÁHAGYVA");
+                customAlert("Rányomták a JÓVÁHAGYVA pecsétet!", () => goToScene("tower_canteen"));
+            }, type: "tactical" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány: az ügyintéző hatásköre nem terjed ki a pecsételésre", condition: () => player.stats.esz >= 2, action: () => {
+                addStamp("JÓVÁHAGYVA"); customAlert("Az ügyintéző belátja a hibát és rányomja a JÓVÁHAGYVA pecsétet.", () => goToScene("tower_canteen"));
+            }, type: "tactical" },
+            { text: " 🔴 [HARC] Megküzdesz a Bürokrata Ügyintézővel!", action: () => startCombat("bureaucrat", "bureaucrat_win"), type: "combat" }
+        ]
+    },
+    bureaucrat_win: {
+        text: "Legyőzted az ügyintézőt és megszerzed a 'JÓVÁHAGYVA' pecsétet!",
+        onEnter: () => addStamp("JÓVÁHAGYVA"),
+        options: [{ text: " 🔴 Felmész a Torony felsőbb szintjeire", target: "tower_canteen", type: "normal" }]
+    },
+
+    // ===== TORONY: ALSÓ SZINTEK =====
+    tower_reception: {
+        text: " 🎫 TORONY RECEPCIÓ - Sorszámhúzó Automata\n\nA hűvös előcsarnokban egy kijelző világít: 'JELENLEG KISZOLGÁLVA: 12. SORSZÁM'. A kezedben lévő jegyen ez áll: 4097.\n\n'A felsőbb szintekre csak érvényes beléptetőkártyával lehet feljutni. A kártyát a recepció állítja ki, sorszám szerint.'",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A sorszám megkerülése fegyelmi vétség!",
+            veteran: " 🔵 ELŐD: Mindenki megvesztegethető, csak a számlát kell megtalálni hozzá."
+        },
+        options: [
+            { text: " ⏳ Leülsz és türelmesen kivárod a sorodat", target: "reception_wait", type: "normal" },
+            { text: " 💰 Odacsúsztatsz 3 ÁFA-s Aranyat a recepciósnak", action: () => { if (spendGold(3)) goToScene("tower_lift"); }, type: "tactical" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány: a sorszámod formailag érvénytelen, ezért automatikusan 'soron kívüli'", condition: () => player.stats.esz >= 2, target: "tower_lift", type: "tactical" }
+        ]
+    },
+    reception_wait: {
+        text: " ⏳ VÁRAKOZÁS\n\nA kijelző lassan 13-ra vált, majd visszaáll 12-re ('technikai okokból'). Órák telnek. Végre felhangzik: '4097. sorszám, kérem az 1. ablakhoz!' Az ablak már zárva van, de a kártyát átnyújtják a résen. (+1 KFF)",
+        onEnter: () => changeStats(0, 1, 0, 0),
+        options: [{ text: "Átveszed a beléptetőkártyát és a lifthez mész", target: "tower_lift", type: "normal" }]
+    },
+    tower_lift: {
+        text: " 🛗 SZOLGÁLATI LIFT\n\nA lift panelén nincsenek emeletszámok, csak osztálynevek. Egy kézzel írt cetli ragad mellette:\n'Mindig azt a gombot nyomja meg, amelyik mellett tiltó matrica van. A többi csapda.'",
+        options: [
+            { text: " 🔘 Beszerzés", target: "lift_fail", type: "normal" },
+            { text: " 🔘 Jogi Csoport", target: "lift_fail", type: "normal" },
+            { text: " 🔘 Nyílt Irodatér (Kérjük, NE nyomja meg!)", target: "openspace", type: "tactical" },
+            { text: " 🔘 Selejtezett Akták", target: "lift_fail", type: "normal" }
+        ]
+    },
+    lift_fail: {
+        text: " 🌀 ROSSZ OSZTÁLY!\n\nA lift egy olyan emeletre visz, ahol mindenki rád néz és kórusban mondja: 'Ez nem ide tartozik.' Kituszkolnak, és visszalökődsz a liftbe. (-2 KT, +1 KFF)",
+        onEnter: () => changeStats(-2, 1, 0, 0),
+        options: [{ text: "Újra a lift gombjai elé állsz", target: "tower_lift", type: "normal" }]
+    },
+    openspace: {
+        text: " 🖥️ NYÍLT IRODATÉR\n\nSzéles terem, száz asztal, nulla fal. Mindenki headsetben beszél, senki nem hallgat. A túloldalon áll az ajtó a Tárgyalókhoz. Az utat Headsetes Ügyfélszolgálatos-Gólemek őrzik, akik reflexből 'Köszönjük, hogy várakozott' üzenetet mondanak.",
+        notes: {
+            inspector: " 🔴 ELLENŐR: Az Irodatérben tilos a hangos gondolkodás!",
+            veteran: " 🔵 ELŐD: Aki úgy tesz, mintha telefonálna, láthatatlan."
+        },
+        options: [
+            { text: " 🙄 [ZSIVÁNY] Teátrális Szemforgatás: ostentatív sértődöttséggel átvonulsz, senki nem mer megállítani", condition: () => player.classKey === "rogue", target: "meeting_1", type: "tactical" },
+            { text: " 🎧 Fejhallgatót teszel fel és úgy teszel, mintha telefonálnál (az esély az Ügyességtől függ)", action: () => {
+                const chance = Math.min(85, Math.max(25, 50 + 15 * player.stats.ugy));
+                if (Math.random() * 100 < chance) {
+                    customAlert("Mindenki elhiszi, hogy fontos hívásban vagy. Észrevétlenül átsétálsz.", () => goToScene("meeting_1"));
+                } else {
+                    customAlert("A fejhallgatód nincs bedugva! Egy Headsetes Gólem észrevesz!", () => startCombat("headset_golem", "meeting_1"));
+                }
+            }, type: "tactical" },
+            { text: " 🔴 [HARC] Átverekeded magad a Headsetes Ügyfélszolgálatos-Gólemen", action: () => startCombat("headset_golem", "meeting_1"), type: "combat" }
+        ]
+    },
+    meeting_1: {
+        text: " 📊 ÉRTEKEZLET-LABIRINTUS (1/3)\n\nÁtvágnál a Tárgyalón, de az ajtó becsukódik mögötted. A kivetítőn: 'NAPIREND: A napirend megvitatása.' Egy kolléga felderül: 'Jó, hogy itt vagy, éppen rólad beszélünk.'",
+        options: [
+            { text: " 🙂 Bólogatsz", target: "meeting_2", type: "normal" },
+            { text: " 📝 Jegyzetelsz, mintha fontos lenne (+1 KFF)", action: () => { if (changeStats(0, 1, 0, 0)) goToScene("meeting_2"); }, type: "tactical" }
+        ]
+    },
+    meeting_2: {
+        text: " 📊 ÉRTEKEZLET-LABIRINTUS (2/3)\n\n'Következő napirendi pont: a következő napirendi pont.' Valaki felteszi a kezét, hogy lezárná a témát, de ezzel csak megnyitja a következőt. A kivetítő állása: 14. dia a 212-ből.",
+        options: [
+            { text: " 🤔 Megkérdezed, hogy ez miért nem e-mail (Ésszel ingyen, egyébként +1 KFF)", action: () => {
+                if (player.stats.esz < 1) { if (!changeStats(0, 1, 0, 0)) return; }
+                goToScene("meeting_3");
+            }, type: "tactical" },
+            { text: " 🥱 Csendben ásítozol (+1 KFF)", action: () => { if (changeStats(0, 1, 0, 0)) goToScene("meeting_3"); }, type: "normal" }
+        ]
+    },
+    meeting_3: {
+        text: " 📊 ÉRTEKEZLET-LABIRINTUS (3/3)\n\n'Összefoglalva: megbeszéltük, hogy megbeszéljük.' Mindenki rád néz: kell egy önkéntes a jegyzőkönyvvezetéshez. Az ajtó közben kicsit nyitva maradt.",
+        options: [
+            { text: " ✍️ Önként jelentkezel jegyzőkönyvvezetőnek (+8 arany túlóra-pótlék, +1 KFF)", action: () => { if (changeStats(0, 1, 8, 0)) goToScene("home_portal"); }, type: "tactical" },
+            { text: " 📞 Hirtelen 'megszólal' a telefonod és kisurransz", target: "home_portal", type: "normal" },
+            { text: " 📧 'Ez egy e-mailben is elintézhető lett volna!' (csak Ésszel, mindenki megtörten engedi)", condition: () => player.stats.esz >= 1, action: () => { if (changeStats(0, -1, 0, 0)) goToScene("home_portal"); }, type: "tactical" }
+        ]
+    },
+
+    // ===== TORONY: KÖZÉPSŐ SZINTEK =====
+    tower_canteen: {
+        text: " 🍴 KANTIN\n\nA mai menü: tegnapi menü. A pult mellett egy kávéautomata dönget, amelynek külön hangulata van. A falon tábla: 'A kávé forrón szolgálható fel, hidegen is.'",
+        options: [
+            { text: " 🥪 Szendvics (3 arany): +6 KT", condition: () => !player.flags.sandwich, action: () => {
+                if (spendGold(3)) { player.flags.sandwich = true; changeStats(6, 0, 0, 0); showToast("Elfogyasztottad a szendvicset (+6 KT)."); stay("tower_canteen"); }
+            }, type: "tactical" },
+            { text: " ☕ Dupla eszpresszó (5 arany): -2 KFF", condition: () => !player.flags.espresso, action: () => {
+                if (spendGold(5)) { player.flags.espresso = true; changeStats(0, -2, 0, 0); showToast("A kávé lecsillapít (-2 KFF)."); stay("tower_canteen"); }
+            }, type: "tactical" },
+            { text: " 🔴 [HARC] Megküzdesz a Dühös Kávéautomata-Gólemmel (aprópénz-jutalom)", condition: () => !player.flags.automat, action: () => { player.flags.automat = true; startCombat("automat_golem", "tower_canteen"); }, type: "combat" },
+            { text: " 🚪 Továbbmész a Tűzvédelmi Folyosóra", target: "fire_drill", type: "normal" }
+        ]
+    },
+    fire_drill: {
+        text: " 🚨 TŰZRIADÓ!\n\nA hangosbemondó nyugodt hangon közli: 'A gyülekezési pont tűz esetén a mindenkori tűz esetén kijelölt gyülekezési pont.' Mindenki futva menekül, te nem. A falon három tábla:\n\nA) Parkoló\nB) Tetőterasz\nC) A Tűzvédelmi Szabályzat 14/b mellékletének 3. lábjegyzete szerinti pont",
+        options: [
+            { text: " 🅰️ A) Parkoló", action: () => { if (changeStats(-2, 1, 0, 0)) customAlert("Menekülés közben megtaposnak. A parkolóban nincs senki. (-2 KT, +1 KFF)", () => goToScene("union_office")); }, type: "normal" },
+            { text: " 🅱️ B) Tetőterasz", action: () => { if (changeStats(-2, 1, 0, 0)) customAlert("A tetőn csak egy galamb van, aki szintén nem tudja a szabályokat. (-2 KT, +1 KFF)", () => goToScene("union_office")); }, type: "normal" },
+            { text: " 🅲 C) A 14/b melléklet szerinti pont", action: () => {
+                addItem("Tűzvédelmi Mellény (+1 BP)"); player.bp += 1; updateUI();
+                customAlert("Az előírt ponton a Tűzvédelmi Megbízott megkönnyebbülten átad egy mellényt: 'Végre valaki, aki elolvasta!' (+1 BP)", () => goToScene("union_office"));
+            }, type: "tactical" }
+        ]
+    },
+    union_office: {
+        text: " ✊ SZAKSZERVEZETI IRODA\n\nEgy poros irodában fénymásolt zászlók lógnak. A pultnál ülő Titkár felnéz: 'Panasz, igény, vagy csak kávé?'\n\n'A tagság joga a kötelező pihenőidő.'",
+        options: [
+            { text: " 🏴 [HARCOS] Munkabeszüntetést hirdetsz: +10 KT, -2 KFF", condition: () => player.classKey === "warrior" && !player.flags.strike, action: () => {
+                player.flags.strike = true; changeStats(10, -2, 0, 0); showToast("Sztrájk! A Torony egy óráig nem létezik."); stay("union_office");
+            }, type: "tactical" },
+            { text: " 🪪 Belépsz a szakszervezetbe (5 arany): +8 KT, -1 KFF", condition: () => player.classKey !== "warrior" && !player.flags.union, action: () => {
+                if (spendGold(5)) { player.flags.union = true; changeStats(8, -1, 0, 0); showToast("Tagkönyved van, a Titkár könnyezik."); stay("union_office"); }
+            }, type: "tactical" },
+            { text: " 🚪 Továbbmész a HR Tréningterem felé", target: "team_building", type: "normal" }
+        ]
+    },
+    hr_training: {
+        text: " 🤝 HR TRÉNINGTEREM — Kötelező Csapatépítés\n\nEgy Coach-Gólem hevesen tapsol: 'Ma bizalomzuhanást gyakorlunk! Aki nem esik, az nem bízik, aki nem bízik, az felmondhat. Persze nem.'",
+        options: [
+            { text: " 🙃 Hátraesel a kollégák karjába (55% siker)", action: () => {
+                if (Math.random() < 0.55) {
+                    if (changeStats(0, -2, 0, 0)) customAlert("Elkapnak! Meghatódsz és kevésbé vagy frusztrált. (-2 KFF)", () => goToScene("annual_review"));
+                } else {
+                    if (changeStats(-4, 1, 0, 0)) customAlert("Mindenki a telefonját nézte. Padlót fogsz. (-4 KT, +1 KFF)", () => goToScene("annual_review"));
+                }
+            }, type: "tactical" },
+            { text: " 🩹 Sérült bokára hivatkozol (Ésszel ingyen)", condition: () => player.stats.esz >= 1, target: "annual_review", type: "tactical" },
+            { text: " 🩹 Sérült bokára hivatkozol (nem hisznek neked, +1 KFF)", condition: () => player.stats.esz < 1, action: () => { if (changeStats(0, 1, 0, 0)) goToScene("annual_review"); }, type: "normal" },
+            { text: " 🔴 [HARC] Megküzdesz a Csapatépítő Coach-Gólemmel", action: () => startCombat("coach_golem", "annual_review"), type: "combat" }
+        ]
+    },
+    it_room_classic: {
+        get text() {
+            return " 🖥️ SZERVERSZOBA\n\nA hideg szerverszobában egy monitor villog: 'JELSZÓ: ______'. Egy ragasztott cetli az IT Helpdesktől:\n'A jelszó az UTOLJÁRA ÉRKEZETT LEVÉL TÁRGYÁNAK ELSŐ SZAVA. (Ezt a cetlit ne olvasd el.)'\n\nTipp: nézd meg a Leveleket a felső sávban!";
+        },
+        get options() {
+            const right = lastMailWord();
+            const decoys = shuffle(["Szinergia", "Iktatószám", "Nyilatkozat", "Sárkány", "Pótlap", "Szabályzat", "Határidő", "Értesítés"]
+                .filter(w => w.toLowerCase() !== right.toLowerCase())).slice(0, 3);
+            return shuffle([right, ...decoys]).map(w => ({
+                text: ` 🔑 ${w}`,
+                type: "tactical",
+                action: () => {
+                    if (w === right) {
+                        if (changeStats(0, -1, 10, 0)) customAlert("A szerver kegyesen megnyílik és visszautalja a ki nem fizetett túlóráidat. (+10 arany, -1 KFF)", () => goToScene("finance"));
+                    } else {
+                        if (changeStats(-2, 1, 0, 0)) customAlert("Hibás jelszó. A rendszer 3 másodpercig sír, majd kiüt. (-2 KT, +1 KFF)", () => goToScene("finance"));
+                    }
+                }
+            }));
+        }
+    },
+
+    // ===== TORONY: FELSŐ SZINTEK =====
+    finance: {
+        text: " 💶 PÉNZÜGYI SZINT\n\nEgy tintafoltos, gőzölgő Elszámolási Pótlap-Szörny lebeg a pult fölött, sok kis karral, mind pecsétet lóbál. 'Kérem a pótlap pótlását, 3 példányban! Különben a pénzed az enyém.'",
+        options: [
+            { text: " 🔴 [HARC] Megküzdesz az Elszámolási Pótlap-Szörnnyel", action: () => startCombat("finance_monster", "audit"), type: "combat" },
+            { text: " 💰 Befizeted a Pótlap-illetéket (8 arany)", action: () => { if (spendGold(8)) goToScene("audit"); }, type: "tactical" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány: a pótlap pótlása nem pótolható pótlék", condition: () => player.stats.esz >= 2, target: "audit", type: "tactical" }
+        ]
+    },
+    audit: {
+        get text() {
+            return " 🕵️ BELSŐ ELLENŐRZÉS — Jegyzőkönyv-vizsga\n\nEgy Auditor-Gólem tolja eléd a jegyzőkönyvet:\n\nA) 'Készült 2 példányban, mellékelve 3.'\nB) 'Az ülés 10:00-kor kezdődött és 9:00-kor ért véget.'\nC) 'Az ülésen mindenki jelen volt, aki jelen volt.'\n\n'Pontosan EGY sor hibátlan. Melyik az?'"
+                + (player.stats.esz >= 2 ? "\n\n(Ész-súgó: a hibátlan sor az, amelyik nem mond ellent önmagának.)" : "");
+        },
+        options: [
+            { text: " 🅰️ A sor", action: () => { if (changeStats(-3, 1, 0, 0)) customAlert("Az Auditor-Gólem nemet int: 2 és 3 nem ugyanaz. (-3 KT, +1 KFF)", () => goToScene("legal")); }, type: "normal" },
+            { text: " 🅱️ B sor", action: () => { if (changeStats(-3, 1, 0, 0)) customAlert("Az Auditor-Gólem szerint az idő itt nem így működik. (-3 KT, +1 KFF)", () => goToScene("legal")); }, type: "normal" },
+            { text: " 🅲 C sor", action: () => { if (changeStats(0, -1, 10, 0)) customAlert("'Hibátlan. Kellemetlenül.' Az Auditor-Gólem megjutalmaz. (+10 arany, -1 KFF)", () => goToScene("legal")); }, type: "tactical" }
+        ]
+    },
+    legal: {
+        text: " ⚖️ JOGI CSOPORT — TÁRGYALÓ\n\nA bírónő (egy aktakupac parókával) felolvassa:\n'Vád: vétkes tudomásulvétel. A vádlott tudomásul vette, hogy tudomásul vette a tudomásulvételt, holott ezt nem lett volna szabad tudomásul vennie.'\n\n'Hogyan nyilatkozik?'",
+        options: [
+            { text: " 🙅 'Nem vettem tudomásul!' (ez már beismerés: -4 KT, +2 KFF)", action: () => { if (changeStats(-4, 2, 0, 0)) goToScene("tower_warehouse"); }, type: "normal" },
+            { text: " 🎲 'Tudomásul vettem, de nem vétkesen.' (50% siker, különben -3 KT +1 KFF)", action: () => {
+                if (Math.random() < 0.5) customAlert("A bírónő szeme megvillan: 'Ez joggyakorlat.' Felmentenek.", () => goToScene("tower_warehouse"));
+                else if (changeStats(-3, 1, 0, 0)) customAlert("'Vétkes vétkesség.' Pénzbírság: türelmed. (-3 KT, +1 KFF)", () => goToScene("tower_warehouse"));
+            }, type: "tactical" },
+            { text: " 📜 Kifogásolod a vád tudomásulvételét (csak Ésszel: -1 KFF)", condition: () => player.stats.esz >= 1, action: () => { if (changeStats(0, -1, 0, 0)) customAlert("A bíróság tudomásul veszi a kifogásodat. Ezt viszont már nem lehet kifogásolni.", () => goToScene("tower_warehouse")); }, type: "tactical" },
+            { text: " 💰 Óvadékot fizetsz (10 arany)", action: () => { if (spendGold(10)) goToScene("tower_warehouse"); }, type: "tactical" }
+        ]
+    },
+    tower_warehouse: {
+        text: " 📦 BESZERZÉSI RAKTÁR\n\nSzáz polc, mind rendelés alatt. A táblán: 'Ami itt van, azt meg kell rendelni. Ami meg van rendelve, az nincs itt.'\n\n(Tipp: a Mappában kombinálhatod a talált tárgyakat.)",
+        options: [
+            { text: " 🔎 Átkutatod a polcokat (Hivatali Pecsét)", condition: () => !player.flags.shelf, action: () => {
+                player.flags.shelf = true; addItem("Hivatali Pecsét"); showToast("Találtál egy Hivatali Pecsétet!"); stay("tower_warehouse");
+            }, type: "tactical" },
+            { text: " 🛡️ Raktári páncélmellényt vásárolsz (6 arany): +1 BP", condition: () => !player.flags.armor, action: () => {
+                if (spendGold(6)) { player.flags.armor = true; player.bp += 1; updateUI(); showToast("Megvetted a mellényt (+1 BP)."); stay("tower_warehouse"); }
+            }, type: "tactical" },
+            { text: " 🚪 Továbbmész a Vezérigazgatói Titkárságra", target: "warehouse_audit", type: "normal" }
+        ]
+    },
+    secretariat: {
+        text: " 🐉 VEZÉRIGAZGATÓI TITKÁRSÁG — ELŐSZOBA\n\nEgy hatalmas íróasztal mögött egy Titkárnő-Sárkány trónol, naptárral a mancsában. Tűzszerűen lélegzik, de csak a határidők égnek. 'Időpont nélkül nem fogadhatom. A legközelebbi szabad időpont: tegnap 14:00.'",
+        options: [
+            { text: " 📅 Időpontot egyeztetsz (+2 KFF)", action: () => { if (changeStats(0, 2, 0, 0)) goToScene("secretariat_done"); }, type: "tactical" },
+            { text: " 🔵 [FAJ KÉPESSÉG] Agresszív Formanyomtatvány: a naptár időpontja formailag érvénytelen", condition: () => player.stats.esz >= 2, target: "secretariat_done", type: "tactical" },
+            { text: " 🔏 [VÉGSŐ PECSÉT] A naptárba pecsétet nyomsz: a Titkárnő-Sárkány megadja magát", condition: () => hasItem("Végső Pecsét"), action: () => { useSeal(); goToScene("secretariat_done"); }, type: "tactical" },
+            { text: " 🔴 [HARC] Megküzdesz a Titkárnő-Sárkánnyal", action: () => startCombat("secretary_dragon", "secretariat_done"), type: "combat" }
+        ]
+    },
+    secretariat_done: {
+        text: " ✅ A TITKÁRNŐ MEGEGYEZIK\n\nA Titkárnő-Sárkány fáradtan sóhajt, és kezébe veszi a pecsétet: 'Ellenőrizve. (Nem néztem meg, de ellenőrizve.)' Átnyújtja az aktádat, a hátsó ajtó nyitva áll.",
+        onEnter: () => { if (!player.stamps.includes("ELLENŐRIZVE")) addStamp("ELLENŐRIZVE"); },
+        options: [{ text: " 🪜 Felmész a Tetőteraszra", target: "rooftop", type: "normal" }]
+    },
+    rooftop: {
+        text: " 🌇 TETŐTERASZ — A Csend Előtt\n\nA szél fúj, a város apró, a papírok pedig lengenek. Egy vagy két szék áll a korlátnál, az egyiken az ELŐD ül, kávéval.\n\n'Hosszú nap, mi? Én is ide érkeztem a 32/B-vel. Az ajtó mögött a Nagyúr vár. Azt hiszem, már találkoztál vele... csak kicsit másképp néz ki.'",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A terasz nem pihenőhely. (Pihenőhely.)",
+            veteran: " 🔵 ELŐD: Még mindig nem késő eldönteni, hogy ki akarsz lenni."
+        },
+        options: [
+            { text: " 🛋️ Leülsz pihenni (+10 KT, -2 KFF)", condition: () => !player.flags.rest, action: () => { player.flags.rest = true; changeStats(10, -2, 0, 0); showToast("Pihentél. A város ma is túlélt."); stay("rooftop"); }, type: "tactical" },
+            { text: " ☕ Kávét főzöl a teraszi automatával", action: () => openCoffee(), type: "tactical" },
+            { text: " 💬 Beszélgetsz az Elődel", condition: () => !player.flags.talk, action: () => {
+                player.flags.talk = true; player.atk += 1; updateUI();
+                customAlert("Az Előd: 'A Sötét Nagyúr nem a legrosszabb főnök, akivel dolgoztam. Csak fáradt. Hidd el, aki minden nap csak válaszol, az egy idő után maga lesz a levél.' Átad egy gyűrött jegyzetet. (+1 Sebzés)", () => stay("rooftop"));
+            }, type: "tactical" },
+            { text: " 🛗 Beszállsz az aranyozott panorámaliftbe a Trónterem felé", target: "ceo_lift", type: "normal" }
+        ]
+    },
+
+    ceo_lift: {
+        text: " 🛗 A VEZÉRIGAZGATÓI LIFT ÉS A 'SMALL TALK' CSAPDA\n\nBeszállsz az aranyozott panorámaliftbe, ami a Torony legfelső emeletére visz. Az ajtó záródása előtt az utolsó pillanatban beugrik a Cégcsoport Ügyvezető Igazgatója. A lift 40 emeleten át lassan halad felfelé. Az Igazgató rád mosolyog: 'Nos?'\n\nHa elrontod a feszélyezett irodai csevegést, a HR azonnal feljegyzi.",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A csend is nyilatkozat. Jegyzőkönyvezik.",
+            veteran: " 🔵 ELŐD: Az Igazgatók az időjárásról és a mutatókról szeretnek beszélni. Ebben a sorrendben."
+        },
+        options: [
+            { text: " 🌦️ Elkezdesz beszélni az időjárásról és a vállalati KPI-mutatókról (az esély az Észtől függ)", action: () => {
+                const chance = Math.min(90, Math.max(30, 45 + 15 * player.stats.esz));
+                if (Math.random() * 100 < chance) {
+                    customAlert("'Szinergikus időjárás és KPI-eredmény,' bólint az Igazgató. 'Maga érti, mi forog kockán.' A lift csilingel, és a telefonod rezeg: új levél érkezett.", () => { deliverPraiseMail(); goToScene("tower_gate"); });
+                } else if (changeStats(-3, 2, 0, 0)) {
+                    customAlert("'Ez nem KPI, ez vélemény,' mondja az Igazgató, és a HR-nek jelent. (-3 KT, +2 KFF)", () => goToScene("tower_gate"));
+                }
+            }, type: "tactical" },
+            { text: " 😶 Csendben bámulod a lift emeletjelzőjét (-2 KT a kínos csend miatt)", action: () => {
+                if (changeStats(-2, 0, 0, 0)) customAlert("A kínos csend 40 emeleten át tart. A lift háttérzenéje is zavarba jön. (-2 KT)", () => goToScene("tower_gate"));
+            }, type: "normal" },
+            { text: " 💼 [SZÁMLAKÉPES MÁGUS] Eladsz az Igazgatónak egy fiktív tanácsadói projektet", condition: () => player.classKey === "mage", action: () => {
+                customAlert("'Rejtett Költség Optimalizációs Projekt, heti számlázással.' Az Igazgató aláír, és könnyes szemmel kezet ráz veled. A telefonod rezeg: új levél érkezett.", () => { deliverPraiseMail(); goToScene("tower_gate"); });
+            }, type: "tactical" }
+        ]
+    },
+    tower_gate: {
+        text: "A Trónterem kapujánál lézeres olvasó ellenőrzi a pecséteket ('ELLENŐRIZVE' és 'JÓVÁHAGYVA').",
+        options: [
+            { text: " 🔵 Beolvasod a hiánytalan kérelmet", condition: () => player.stamps.includes("JÓVÁHAGYVA") && player.stamps.includes("ELLENŐRIZVE"), target: "dark_lord_chamber", type: "tactical" },
+            { text: " 🔏 [VÉGSŐ PECSÉT] Az ajtó a pecsét láttán magától kinyílik", condition: () => hasItem("Végső Pecsét") && !(player.stamps.includes("JÓVÁHAGYVA") && player.stamps.includes("ELLENŐRIZVE")), action: () => { useSeal(); goToScene("dark_lord_chamber"); }, type: "tactical" },
+            { text: " 🔴 Berúgod az ajtót (-5 KT)", action: () => { if (changeStats(-5, 1, 0, 0)) goToScene("dark_lord_chamber"); }, type: "combat" }
+        ]
+    },
+    dark_lord_chamber: {
+        text: "A trónon maga a SÖTÉT NAGYÚR ül: A Jövőbeli Önmagad!\n\n'Végre meghoztad a 32/B-t a város másik végéből! Átveszed a helyemet?'",
+        options: [
+            { text: " 🔴 [HARC] Megküzdesz a Jövőbeli Önmagaddal!", action: () => startCombat("dark_lord", "ending_successor"), type: "combat" },
+            { text: " 🔵 Átadod a 32/B-t és átveszed a Dungeont", target: "ending_successor", type: "tactical" },
+            { text: " ☕ [TITKOS] Felmondasz, és kávézót nyitsz (Prémium Kávé, 60+ arany és alacsony KFF kell)", condition: () => hasItem("Prémium Kávé") && player.gold >= 60 && player.kff <= 12, target: "ending_cafe", type: "tactical" },
+            { text: " 👔 [VEZÉRIGAZGATÓ] Átveszed a Vezérigazgatói széket (kiváló értékelés és az elismerő levél megválaszolása kell)", condition: () => player.flags.rv && player.flags.rv.grade === "great" && hasPraiseReplied(), target: "ending_ceo", type: "tactical" },
+            { text: " 📥 Beletörődsz: a rendszer beolvaszt (magas KFF esetén)", condition: () => player.kff >= 18, target: "ending_merged", type: "normal" }
+        ]
+    },
+    ending_successor: {
+        text: "A 32/B aláírva! TE vagy a Fekete Torony új Sötét Nagyura!\n\nSZTORY VÉGE - GRATULÁLOK!",
+        onEnter: () => { markTaskDone("boss"); recordRun("A Sötét Nagyúr utódja", true); },
+        options: [{ text: "Új Játék Indítása", action: () => location.reload(), type: "normal" }]
+    },
+    // ===== ÚJ JELENETEK: MINIJÁTÉKOK, ÚJ FEJEZETEK, BEFEJEZÉSEK =====
+    buffet_poker: {
+        get text() {
+            const p = player.flags.poker;
+            const hands = player.flags.pokerHands || 0;
+            let t = " 🃏 KÁVÉAUTOMATA-PÓKER\n\nAz automata oldalán kopott felirat: 'Kávé helyett játék. A ház mindig nyer, de a ház nem mindig működik.' A tét " + POKER_STAKE + " arany/kör, legfeljebb " + POKER_MAX_HANDS + " kört játszhatsz. Eddig: " + hands + ".\nKifizetés: Pár = tét vissza, Két pár 10, Drill 14, Sor 20, Szín 24, Full 36, Póker 60, Színsor 120.";
+            if (p && p.phase === "hold") t += "\n\nA lapjaid: " + p.hand.map(cardStr).join("  ") + "\nVálaszd ki, melyiket tartod meg, aztán cserélj.";
+            if (p && p.phase === "done") t += "\n\nA lapjaid: " + p.hand.map(cardStr).join("  ") + "\n" + p.result;
+            return t;
+        },
+        get options() {
+            const p = player.flags.poker;
+            const hands = player.flags.pokerHands || 0;
+            const out = [];
+            if (p && p.phase === "hold") {
+                p.hand.forEach((c, i) => out.push({ text: (p.hold[i] ? " ✅ Tartod: " : " ⬜ Cseréled: ") + cardStr(c), action: () => pokerToggle(i), type: "tactical" }));
+                out.push({ text: " 🔄 Csere (a nem tartott lapok kicserélődnek)", action: () => pokerDraw(), type: "combat" });
+                return out;
+            }
+            if (hands < POKER_MAX_HANDS) out.push({ text: " 🃏 " + (p ? "Újabb kör" : "Játszol") + " (" + POKER_STAKE + " arany)", action: () => pokerStart(), type: "tactical" });
+            out.push({ text: " 🔙 Visszalépsz a büféhez", action: () => { player.flags.poker = null; stay("office_buffet"); }, type: "normal" });
+            return out;
+        }
+    },
+
+    it_room: {
+        text: " 🖥️ SZERVERSZOBA\n\nA hideg szerverszobában egy monitor villog: 'TŰZFAL AKTÍV. KÓD: ____'. A kód 4 számjegy (1-től 6-ig). Egy ragasztott cetli az IT Helpdesktől:\n'A régi jelszó az UTOLJÁRA ÉRKEZETT LEVÉL TÁRGYÁNAK ELSŐ SZAVA. (Ezt a cetlit ne olvasd el.)'",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A tűzfal feltörése szigorúan tilos. A kód kitalálása viszont nem 'feltörés', hanem 'tippelés'.",
+            veteran: " 🔵 ELŐD: Mastermind. A 🟢 pontos helyen van, a 🟡 jó szám, rossz helyen. 8 próbálkozásod van."
+        },
+        options: [
+            { text: " 🔢 Feltöröd a tűzfalat: kódtörés (8 próbálkozás, gyors siker nagyobb jutalom)", action: () => { mmStart(); goToScene("it_firewall"); }, type: "tactical" },
+            { text: " 📝 Elolvasod a cetlit (régi módszer: jelszó a levélből)", target: "it_room_classic", type: "normal" },
+            { text: " 🔏 [VÉGSŐ PECSÉT] A tűzfal a pecsétet látva magától megnyílik", condition: () => hasItem("Végső Pecsét"), action: () => { useSeal(); goToScene("finance"); }, type: "tactical" }
+        ]
+    },
+    it_firewall: {
+        get text() {
+            const mm = player.flags.mm || { tries: [] };
+            let t = " 🔥 TŰZFAL-KÓDTÖRÉS\n\nA monitoron négy üres hely villog. Számjegyek: 1–6, ismétlődhetnek. Próbálkozások: " + mm.tries.length + "/" + MM_MAX + ".\n";
+            mm.tries.forEach((x, i) => { t += "\n" + (i + 1) + ". " + x.g.join("") + "   🟢 " + x.exact + "   🟡 " + x.wrong + "   – " + mmSarcasm(x); });
+            return t;
+        },
+        get options() {
+            return [
+                { text: " 🔢 Kódot adsz meg (4 számjegy, 1–6)", action: () => customPrompt("Írd be a 4 jegyű kódot (számjegyek 1–6):", "", v => { if (v !== null) mmGuess(v); else stay("it_firewall"); }), type: "tactical" },
+                { text: " 🏳️ Feladod, inkább a régi cetli (-1 KFF)", action: () => { player.flags.mm = null; if (changeStats(0, 1, 0, 0)) goToScene("it_room_classic"); }, type: "normal" }
+            ];
+        }
+    },
+
+    home_portal: {
+        text: " 🌀 A HOME OFFICE DIMENZIÓ\n\nA Tárgyalóból kilépve a folyosón egy kilincs helyén 'Csatlakozás' gomb villog. Mögötte a lakásod, de minden falon Teams-ablakok lógnak. Csoportos hívás indul, három résztvevővel, és a feladat egyszerű: kamerát nem kapcsolsz be.",
+        notes: {
+            inspector: " 🔴 ELLENŐR: A kamera kikapcsolása alapvető munkavállalói jog. Bekapcsolni viszont kötelező.",
+            veteran: " 🔵 ELŐD: A Dimenzióban a szomszédok is bejátszanak. Ne a kamerát védd, az arcodat."
+        },
+        options: [
+            { text: " 🔘 Csatlakozol a hívásra (3 esemény, kamera nélkül jutalom jár)", action: () => { player.flags.ho = null; hoState(); goToScene("home_office"); }, type: "tactical" },
+            { text: " 🪜 Kerülőút a lépcsőházban (+1 KFF, nincs jutalom)", action: () => { if (changeStats(0, 1, 0, 0)) goToScene("lab_level_1"); }, type: "normal" }
+        ]
+    },
+    home_office: {
+        get text() {
+            const ho = hoState();
+            let t = " 🏠 HOME OFFICE DIMENZIÓ — Csoportos hívás\n";
+            if (ho.log.length) t += "\n" + ho.log.join("\n") + "\n";
+            if (ho.round < HO_EVENTS.length) {
+                const ev = HO_EVENTS[ho.round];
+                t += "\n(" + (ho.round + 1) + "/" + HO_EVENTS.length + ") " + ev.title.toUpperCase() + "\n" + ev.text;
+            } else t += "\nA hívás véget ért. A portál kidob az Irattári Részleg bejáratához.";
+            return t;
+        },
+        get options() {
+            const ho = hoState();
+            if (ho.round >= HO_EVENTS.length) return [{ text: " 🏢 Továbbmész az Irattári Részlegre", target: "lab_level_1", type: "normal" }];
+            return HO_EVENTS[ho.round].opts.map((o, i) => ({ text: o.t, action: () => hoChoose(i), type: o.cam ? "normal" : "tactical" }));
+        }
+    },
+
+    team_building: {
+        get text() {
+            let t = " 🌲 KÖTELEZŐ ÖNKÉNTES CSAPATÉPÍTŐ HÉTVÉGE\n\nA Torony hátsó kijárata egy erdőbe nyílik, ahol a Szakszervezet 'szabadidős programot' szervezett, a vezetőség szerint ez 'munkaidő'. A tábortűz körül mindenki mosolyog. Aki nem mosolyog, annak nevét felírják.";
+            if (!player.companion) t += "\n\nA program része a 'csapatépítés': választhatsz egy kollégát, aki a továbbiakban melletted marad. (Csak egy fér a csapatba.)";
+            else t += "\n\nTársad: " + COMPANIONS[player.companion].name + " – " + COMPANIONS[player.companion].desc;
+            return t;
+        },
+        notes: {
+            inspector: " 🔴 ELLENŐR: A részvétel önkéntes. Aki nem önként vesz részt, azt önként kötelezzük.",
+            veteran: " 🔵 ELŐD: A Gyakornok keveset segít, de megbízhatóan. A Szellem csendes, de kávészagú."
+        },
+        options: [
+            { text: " 🔥 Tábortűz-ének: te vezeted a 'Szinergia-dalt' (Ész)", condition: () => !player.flags.tbSong, action: () => {
+                player.flags.tbSong = true;
+                if (statCheck("esz", 50)) { if (changeStats(0, -2, 0, 0)) { showToast("A kollégák együtt énekelnek. Egy percig mindenki ember. (-2 KFF)"); stay("team_building"); } }
+                else if (changeStats(0, 1, 0, 0)) { showToast("A dal második versszaka csak a szöveg hibalistája. (+1 KFF)"); stay("team_building"); }
+            }, type: "tactical" },
+            { text: " 🧭 Térkép nélküli tájfutás (Ügyesség)", condition: () => !player.flags.tbRun, action: () => {
+                player.flags.tbRun = true;
+                if (statCheck("ugy", 50)) { if (changeStats(0, 0, 6, 0)) { showToast("Találtál egy elveszett szatyrot 6 arannyal. (+6 arany)"); stay("team_building"); } }
+                else if (changeStats(-3, 0, 0, 0)) { showToast("Három órán át körbe-körbe jártál az erdőben. (-3 KT)"); stay("team_building"); }
+            }, type: "tactical" },
+            { text: " 🏖️ A Gyakornok csatlakozik ('Szabadságon vagyok, de ide jöttem.')", condition: () => !player.companion, action: () => {
+                player.companion = "intern"; updateUI(); showToast("A Gyakornok a csapatodban van. (Harcban 35% esély: 3 sebzés)"); stay("team_building");
+            }, type: "tactical" },
+            { text: " 👻 A Kávéfőző-Szellem csatlakozik (a tábortűz füstjéből kávéillat száll)", condition: () => !player.companion, action: () => {
+                player.companion = "ghost"; updateUI(); showToast("A Kávéfőző-Szellem melletted lebeg. (Harc után +3 KT)"); stay("team_building");
+            }, type: "tactical" },
+            { text: " 🚪 Továbbmész a HR Tréningterembe", target: "hr_training", type: "normal" }
+        ]
+    },
+
+    annual_review: {
+        get text() {
+            const rv = reviewState();
+            let t = " 📋 ÉVI TELJESÍTMÉNYÉRTÉKELÉS\n\nA HR Tréningterem mögött egy íróasztalnál ül az Értékelési Referens, előtte egy dosszié a neveddel. Nem harcol, nem fenyeget, csak kérdez. Ez a legrosszabb.\n";
+            if (rv.q < REVIEW_QS.length) t += "\n(" + (rv.q + 1) + "/" + REVIEW_QS.length + ") " + REVIEW_QS[rv.q].q;
+            else {
+                t += "\nÖsszpontszám: " + rv.score + " (ebből a levelezési fegyelem: " + (rv.mail || 0) + "/3).\n";
+                if (rv.grade === "great") t += "\nMINŐSÍTÉS: KIVÁLÓAN MEGFELELT. A Referens szinte megmosolyogja magát: 'Ez sosem fordult elő.' Átad egy Végső Pecsétet (egyszer bármely ajtót kinyitja), +1 Sebzés, -3 KFF.";
+                else if (rv.grade === "ok") t += "\nMINŐSÍTÉS: MEGFELELT. 'Nem rossz, nem jó, iktatható.' -1 KFF és 5 arany juttatás.";
+                else t += "\nMINŐSÍTÉS: NEM FELELT MEG. 'Fejlesztési tervet készítünk. A terv nem fejleszt semmit.' -3 KT, +2 KFF.";
+            }
+            return t;
+        },
+        get options() {
+            const rv = reviewState();
+            if (rv.q >= REVIEW_QS.length) return [{ text: " 🚪 Továbbmész a Szerverszoba felé", target: "it_room", type: "normal" }];
+            return REVIEW_QS[rv.q].opts.map((o, i) => ({ text: o.t, action: () => reviewAnswer(i), type: "tactical" }));
+        }
+    },
+
+    warehouse_audit: {
+        onEnter: () => { waState(); },
+        get text() {
+            const wa = waState();
+            let t = " 🗂️ RAKTÁR-SELEJTEZÉS\n\nA Beszerzési Raktár kijáratánál Selejtezési Bizottság ül. 'Minden tárgyról nyilatkozni kell, kinek a nevén van. Az el nem számolt tárgy hivatalosan nem létezik.'";
+            if (!wa.items.length) t += "\n\nA Bizottság végigtúrja a zsebeidet, de nincs mit selejtezni. Hivatalosan sajnálják.";
+            else if (wa.i < wa.items.length) t += "\n\nSelejtezésre kijelölt tárgy (" + (wa.i + 1) + "/" + wa.items.length + "): '" + wa.items[wa.i] + "'. Mit nyilatkozol?";
+            else t += "\n\nA selejtezés lezárult. Elvesztett tárgyak: " + wa.lost + ".";
+            return t;
+        },
+        get options() {
+            const wa = waState();
+            if (wa.i < wa.items.length) return [
+                { text: " 📄 Igazolod, hogy a tárgy nálad van, és szükséges (Ész)", action: () => waStep("prove"), type: "tactical" },
+                { text: " 🗑️ Leírod selejtnek (+4 arany jóváírás)", action: () => waStep("scrap"), type: "normal" },
+                { text: " 🎭 Elrejted a táskád aljára (Ügyesség)", action: () => waStep("hide"), type: "tactical" }
+            ];
+            return [{ text: " 🚪 Továbbmész a Vezérigazgatói Titkárság felé", target: "secretariat", type: "normal" }];
+        }
+    },
+
+    ending_cafe: {
+        text: " ☕ BEFEJEZÉS: KILÉPSZ ÉS KÁVÉZÓT NYITSZ\n\nA Sötét Nagyúr kérdése még a levegőben lóg, te viszont félretolod a 32/B-t, kinyitod a Prémium Kávét, és halkan mondod: 'Felmondok.'\n\nA terem elcsendesül. A Nagyúr (aki te vagy, csak fáradtabb) hosszan néz, aztán felsóhajt: 'Én is ezt akartam mindig.' Aláír egy rövid felmondást, sőt, a kávézó első bérleti szerződését is.\n\nÉs lett egy kis kávézó a Fekete Torony lábánál. Nincs benne sorszámhúzó, nincs benne űrlap, csak egy tábla: 'Itt a kávé forrón szolgálható fel. Hidegen nem.'\n\nTITKOS JÓ VÉG – GRATULÁLOK!",
+        onEnter: () => { markTaskDone("boss"); recordRun("Kávézó-tulajdonos", true); },
+        options: [{ text: "Új Játék Indítása", action: () => location.reload(), type: "normal" }]
+    },
+    ending_ceo: {
+        text: " 👔 BEFEJEZÉS: VEZÉRIGAZGATÓ LETTÉL\n\nA Nagyúr ránéz az Évi Értékelésedre, majd a megválaszolt elismerő levélre, és halkan mondja: 'Ilyet még nem láttam: valaki, aki mindenre válaszol.'\n\nMásnap te ülsz a Vezérigazgatói székben. Első intézkedésed: minden kolléga postafiókját átirányítod a saját címedre. Nem fogod elolvasni őket, de ők ezt nem tudják.\n\nA cég hivatalosan fejlődik. A KFF mutatók példátlanul alacsonyak: a levelek senkinél sincsenek.\n\nVEZÉRIGAZGATÓI VÉG – GRATULÁLOK!",
+        onEnter: () => { markTaskDone("boss"); recordRun("Vezérigazgató", true); },
+        options: [{ text: "Új Játék Indítása", action: () => location.reload(), type: "normal" }]
+    },
+    ending_merged: {
+        text: " 📥 BEFEJEZÉS: A RENDSZER BEOLVASZT\n\nA Sötét Nagyúr rád néz, és szomorúan megrázza a fejét. 'Már nem vagy frusztrált. Ez rosszabb, mint hinnéd.'\n\nA padló alatt aktív szerverek zúgnak. Egy kedves hang közli: 'Az Ön profilja migrálásra került. Új pozíció: Nyilvántartási Bejegyzés #4 817 392.'\n\nMegnyugszol. Mindenre aláírsz. Mindenre válaszolsz. A neved ott áll minden űrlap alján, de már nem te írod alá.\n\nA BEOLVADÁS VÉGE – NEM GYŐZELEM, DE LEGALÁBB IKTATVA.",
+        onEnter: () => { markTaskDone("boss"); recordRun("Beolvasztva", false); },
+        options: [{ text: "Új Játék Indítása", action: () => location.reload(), type: "normal" }]
+    },
+
+    game_over: {
+        text: "",
+        onEnter: () => {
+            recordRun(player.gameOverReason === "kff" ? "Kiégett (KFF)" : "Kiégett (KT)", false);
+            const KFF_OVER = [
+                "BÜROKRATIKUS KIÉGÉS\n\nGratulálunk! Az Ön humán erőforrási kapacitása hivatalosan is kimerült. A rendszer iktatta a mentális összeomlását, és továbbította azt a Humánerőforrás Menedzsment Alosztály B/2-es ügyosztályára. Kérjük, a kilépési papírokat kitöltve, 3 példányban nyújtsa be a recepcióra. Viszlát!\n\nJÁTÉK VÉGE",
+                "RENDSZERHIBA MIATTI ELTÁVOLÍTÁS\n\nAz Ön által tanúsított kommunikációs passzivitás átlépte a Hatékonysági Főigazgatóság által elfogadott küszöbértéket. A pozícióját automatikusan átruháztuk egy scriptre, amely lényegesen kevesebb kávét fogyaszt és nem okoz frusztrációt a vezetőségnek.\n\nJÁTÉK VÉGE",
+                "PASSZÍV-AGRESSZÍV ADMINISZTRATÍV BÚCSÚ\n\nA levelezőrendszer elérte a kritikus tömeget. Ön sikeresen megbénította a vállalati munkafolyamatokat a nem-válaszolás művészetével. A felmondólevelét e-mailben küldtük el – kérjük, válaszoljon rá 3 napon belül, vagy...\n\nJÁTÉK VÉGE"
+            ];
+            const unanswered = player.emails.filter(e => !e.replied).length;
+            storyData.game_over.text = player.gameOverReason === "kff"
+                ? (unanswered >= 3 ? KFF_OVER[2] : KFF_OVER[Math.floor(Math.random() * 2)])
+                : "A Kiégés Tűrésed (KT) elérte a 0-t! Teljesen kiégtél, a rendszer már a pótlását is iktatta...\n\nJÁTÉK VÉGE";
+        },
+        options: [{ text: "Próbáld Újra", action: () => location.reload(), type: "normal" }]
+    }
+};
+
+/* ============ UI ============ */
+function updateUI() {
+    document.getElementById("kt").textContent = player.kt;
+    document.getElementById("max-kt").textContent = player.maxKt;
+    const kffPen = Math.floor(player.kff / 3);
+    document.getElementById("kff").textContent = `${player.kff}/${KFF_MAX}` + (kffPen ? ` (-${kffPen} sebzés)` : "");
+    document.getElementById("chapter").textContent = player.chapter;
+    document.getElementById("atk").textContent = player.atk;
+    document.getElementById("bp").textContent = player.bp;
+    document.getElementById("gold").textContent = player.gold;
+    document.getElementById("unread-count").textContent = player.emails.filter(e => !e.replied).length;
+    const comp = document.getElementById("companion");
+    if (comp) comp.textContent = player.companion ? COMPANIONS[player.companion].short : "-";
+}
+
+function renderJournalTasks() {
+    document.getElementById("journal-task-list").innerHTML = journalTasks.map(t => `
+        <li>
+            <span>${t.done ? ' ✔️ ' : ' ⏳ '} ${t.text}</span>
+            <span style="font-weight:bold; color:${t.done ? '#1e7e34' : '#8a2be2'};">${t.done ? 'KÉSZ' : 'FOLYAMATBAN'}</span>
+        </li>`).join("");
+}
+
+function openFolder() {
+    renderJournalTasks();
+    const complete = player.stamps.includes("JÓVÁHAGYVA") && player.stamps.includes("ELLENŐRIZVE");
+    document.getElementById("doc-status").innerText = complete ? "HIÁNYTALAN - Befejezett" : "Sötétség-megszüntetésre Vár";
+    document.getElementById("applied-stamps").innerHTML = player.stamps.map(s => `<div class="visual-stamp-badge"> ✔ ${escapeHtml(s)}</div>`).join("");
+    document.getElementById("form-overlay-stamp").innerHTML = player.formApproved ? `<div class="visual-stamp-badge" style="border-color:#1e7e34; color:#1e7e34;">32/B JÓVÁHAGYVA</div>` : "";
+    document.getElementById("form-32b-container").style.display = player.formApproved ? "none" : "block";
+    document.getElementById("form-approved-msg").style.display = player.formApproved ? "block" : "none";
+    document.getElementById("folder-inventory").innerText = player.inventory.join(", ");
+    document.getElementById("folderModal").style.display = "flex";
+}
+function closeFolder() { document.getElementById("folderModal").style.display = "none"; }
+
+function submitForm32B() {
+    const name = document.getElementById("form-name").value.trim();
+    if (!name) { customAlert("Add meg a neved!"); return; }
+    const pet = document.getElementById("form-pet").value.trim();
+    if (!pet) { customAlert("Add meg az első háziállatod nevét is! (Biztonsági kérdés: később jól jöhet.)"); return; }
+    player.petName = pet;
+    player.formApproved = true;
+    markTaskDone("form_fill");
+    openFolder();
+    customAlert("32/B Kérelem hitelesítve!");
+}
+
+const RECIPES = [
+    { a: "Kifogyott Toll",   b: "Piros Tinta",          out: "Működő Hivatali Toll", atk: 2, msg: "SIKERES KOMBINÁCIÓ: 'Működő Hivatali Toll' (+2 Sebzés)!" },
+    { a: "Hivatali Pecsét",  b: "Működő Hivatali Toll", out: "Pecsétnyomó Pallos",   atk: 3, msg: "SIKERES KOMBINÁCIÓ: 'Pecsétnyomó Pallos' (+3 Sebzés)! Minden csapás egy lepecsételt ítélet." },
+    { a: "Hivatali Pecsét",  b: "Kifogyott Toll",       out: "Pecsétnyomó Toll",     atk: 1, msg: "SIKERES KOMBINÁCIÓ: 'Pecsétnyomó Toll' (+1 Sebzés)!" }
+];
+
+function tryCrafting() {
+    const r = RECIPES.find(x => player.inventory.includes(x.a) && player.inventory.includes(x.b));
+    if (r) {
+        player.inventory = player.inventory.filter(i => i !== r.a && i !== r.b);
+        addItem(r.out);
+        player.atk += r.atk;
+        updateUI();
+        openFolder();
+        customAlert(r.msg);
+    } else {
+        customAlert("Nincs nálad kombinálható tárgypár! (Pl. Kifogyott Toll + Piros Tinta, vagy Hivatali Pecsét + Toll.)");
+    }
+}
+
+/* ============ LEVELEZÉS ============ */
+const EMAIL_POOL = [
+    { from: "HR Osztály <hr-osztaly@feketetorony.hu>", subject: "SÜRGŐS: Kiválasztási Jegyzőkönyv – 32/B Kézbesítés",
+      body: "Tisztelt Munkavállaló!\n\nIrodai sorsolás alapján TE lettél A KIVÁLASZTOTT! Feladatod: vidd át a 32/B nyomtatványt a városon keresztül a Fekete Toronyba.\n\nÜdvözlettel,\nHR Csapat",
+      reply: "Tisztelt HR Osztály!\n\nTudomásul vettem a Kiválasztási Jegyzőkönyvet. A 32/B nyomtatvánnyal elindultam a Fekete Torony felé.\n\nÜdvözlettel,\n{name}" },
+    { from: "Beszerzési Főosztály <beszerzes@feketetorony.hu>", subject: "Kiegészítő Nyilatkozat a Nyilatkozat Nyilatkozatához",
+      body: "Tisztelt Munkavállaló!\n\nFelhívjuk figyelmét, hogy a 32/B szállítása során keletkezett potenciális szinergiák dokumentálása hiányos. Kérjük, a mellékelt (nem mellékelt) formanyomtatványon erősítse meg, hogy tudomásul vette a tudomásulvételi kötelezettségét.\n\nÜdv,\nBeszerzés" ,
+      reply: "Tisztelt Beszerzési Főosztály!\n\nA szinergiák dokumentálását tudomásul vettem, a tudomásulvételt szintén. Kérem, ezt tekintsék tudomásulvételnek.\n\nÜdvözlettel,\n{name}" },
+    { from: "Munkavédelmi Felelős <munkavedelem@feketetorony.hu>", subject: "Kötelező Kockázatértékelés: Sárkányok és Egyéb Átjárók",
+      body: "Tisztelt Munkavállaló!\n\nA folyosói sárkányok kockázati besorolása felülvizsgálatra szorul. Kérjük, igazolja vissza, hogy a sárkányokat a Munkavédelmi Szabályzat 14. §-a szerint, megfelelő távolságból nem vette észre.\n\nVigyázzunk egymásra (írásban)!\nMunkavédelem",
+      reply: "Tisztelt Munkavédelmi Felelős!\n\nVisszaigazolom, hogy a sárkányokat a szabályzat szerint, megfelelő távolságból nem vettem észre. A távolságot nem mértem, de dokumentáltam.\n\nÜdvözlettel,\n{name}" },
+    { from: "Pénzügyi Osztály <penzugy@feketetorony.hu>", subject: "ÁFA-s Arany Elszámolási Pótlap (Pótlap Pótlása)",
+      body: "Tisztelt Munkavállaló!\n\nAz Ön által felhasznált ÁFA-s Aranyak elszámolása a negyedéves ciklusban nem egyezik a tényleges nem-egyezéssel. Kérjük, 3 példányban, kék tollal pótolja a pótlapot.\n\nTisztelettel,\nPénzügy",
+      reply: "Tisztelt Pénzügyi Osztály!\n\nA pótlapot 3 példányban pótoltam, kék tollal. A harmadik példány az első példány másolata, de ez ne zavarja a rendszert.\n\nÜdvözlettel,\n{name}" },
+    { from: "IT Helpdesk <helpdesk@feketetorony.hu>", subject: "Jelszólejárat Előtti Jelszólejárat Értesítő",
+      body: "Tisztelt Munkavállaló!\n\nJelszava hamarosan lejár, mielőtt lejárna. Kérjük, 24 órán belül változtassa meg a jelszavát egy olyanra, amelyet még nem használt, és amelyet nem is fog megjegyezni.\n\nIT Helpdesk\n(Kérjük, erre a levélre ne válaszoljon. Ha mégis, akkor válaszoljon.)",
+      reply: "Tisztelt IT Helpdesk!\n\nA jelszavamat megváltoztattam egy olyanra, amelyet már most elfelejtettem. Kérem, ezt tekintsék a biztonság növekedésének.\n\nÜdvözlettel,\n{name}" },
+    { from: "Irodai Kantin <kantin@feketetorony.hu>", subject: "Kávéfőző-használati Napló Hiánya",
+      body: "Tisztelt Munkavállaló!\n\nA kávéfőző nyomásnaplójában az Ön neve mellett hiányzik az aláírás. Kérjük, pótolja a hiányt az aláírás aláírásával, vagy igazolja, hogy a kávét nem Ön főzte.\n\nKantin Csapat",
+      reply: "Tisztelt Kantin Csapat!\n\nA naplót aláírtam, az aláírást is aláírtam. A kávét én főztem, de a nyomás nem az én hibám.\n\nÜdvözlettel,\n{name}" },
+    { from: "Jogi Csoport <jog@feketetorony.hu>", subject: "Értesítés Az Értesítések Értesítéséről",
+      body: "Tisztelt Munkavállaló!\n\nÉrtesítjük, hogy értesítettük Önt az értesítési kötelezettségünkről. Amennyiben ezt nem vette tudomásul, az is értesítésnek minősül.\n\nJogi Csoport",
+      reply: "Tisztelt Jogi Csoport!\n\nAz értesítésről értesültem, az értesítésről szóló értesítést is értesítésként kezelem. Kérem, ezt jogi értelemben is értsék.\n\nÜdvözlettel,\n{name}" },
+    { from: "Belső Ellenőrzés <ellenorzes@feketetorony.hu>", subject: "Nem Megfelelőségi Jegyzőkönyv (Előzetes, Végleges Előtt)",
+      body: "Tisztelt Munkavállaló!\n\nAz ellenőrzés során megállapítottuk, hogy az Ön tevékenysége megfelel a nem megfelelőség követelményeinek. Kérjük, 72 órán belül nyilatkozzon arról, hogy nem kíván nyilatkozni.\n\nBelső Ellenőrzés",
+      reply: "Tisztelt Belső Ellenőrzés!\n\nNyilatkozom, hogy nem kívánok nyilatkozni. Ezt a nyilatkozatot nem tekintem nyilatkozatnak.\n\nÜdvözlettel,\n{name}" },
+    { from: "Iktatási Osztály <iktato@feketetorony.hu>", subject: "Iktatószám-kérelem Iktatószámmal Ellátva",
+      body: "Tisztelt Munkavállaló!\n\nA beadványához iktatószámot rendeltünk, amelyet kérjük, iktatószám nélkül ne használjon. Az iktatószám iktatásához új iktatószám szükséges.\n\nIktató",
+      reply: "Tisztelt Iktatási Osztály!\n\nAz iktatószámot iktattam, az új iktatószámot is kértem. Kérem, ezt az iktatást iktassák.\n\nÜdvözlettel,\n{name}" },
+    { from: "Vezérigazgatói Titkárság <titkarsag@feketetorony.hu>", subject: "Hétfő Reggeli Szinergia-megbeszélés (Már Elmúlt)",
+      body: "Tisztelt Munkavállaló!\n\nA hétfő reggeli szinergia-megbeszélésen való távolmaradását kérjük utólag igazolni, előzetesen. A megbeszélés tárgya: a megbeszélések számának csökkentése megbeszélés keretében.\n\nTitkárság",
+      reply: "Tisztelt Titkárság!\n\nA távolmaradásomat utólag, előzetesen igazolom. A megbeszélés számának csökkentéséhez hozzájárulok, kérem, erről tartsanak megbeszélést.\n\nÜdvözlettel,\n{name}" }    ,
+    { from: "Humánpolitikai Alosztály <humanpolitika@feketetorony.hu>", subject: "Szabadságtervezési Szabadság Kérelem (Tervezett Tervezés)",
+      body: "Tisztelt Munkavállaló!\n\nKérjük, tervezze meg a szabadságát a szabadságtervezés keretében, még a szabadságtervezés tervezése előtt. A nem tervezett szabadság tervezettnek minősül, ha tervezetten nem veszik igénybe.\n\nHumánpolitika",
+      reply: "Tisztelt Humánpolitikai Alosztály!\n\nA szabadságomat megterveztem, a tervezést tervezettként iktattam. Szabadságra egyelőre nem megyek, de ezt is tervezem.\n\nÜdvözlettel,\n{name}" },
+    { from: "Épületüzemeltetés <uzemeltetes@feketetorony.hu>", subject: "Folyosói Világítás Fényerő-Egyeztetés (Fénycső Csere Előtti Fénycső)",
+      body: "Tisztelt Munkavállaló!\n\nA 4. emeleti folyosó világítása szabályszerűen villog. Kérjük, jelezze, hogy a villogást észlelte-e, vagy az észlelés az Ön szemében villogott. A javítást a villogás megszűnése után végezzük el.\n\nÜzemeltetés",
+      reply: "Tisztelt Épületüzemeltetés!\n\nA villogást észleltem, az észlelés nem villogott. A javítást a villogás megszűnése után kérem, a villogás megszűnése pedig javításhoz kötött.\n\nÜdvözlettel,\n{name}" },
+    { from: "Adatvédelmi Tisztviselő <adatvedelem@feketetorony.hu>", subject: "Adatkezelési Tájékoztató Tájékoztatójának Tudomásulvétele",
+      body: "Tisztelt Munkavállaló!\n\nTájékoztatjuk, hogy az adatait kezeljük, és erről a tájékoztatót is kezeljük. Kérjük, igazolja, hogy a tájékoztatót elolvasta, mielőtt elolvasta volna.\n\nAdatvédelmi Tisztviselő",
+      reply: "Tisztelt Adatvédelmi Tisztviselő!\n\nA tájékoztatót elolvastam, mielőtt elolvastam volna. Az adataimat kezeljék nyugodtan, de óvatosan.\n\nÜdvözlettel,\n{name}" },
+    { from: "Postázó <postazo@feketetorony.hu>", subject: "Átvételi Elismervény Az Átvétel Elismeréséről",
+      body: "Tisztelt Munkavállaló!\n\nA részére érkezett csomagot nem vette át, ezért az elismervényt sem ismerte el. Kérjük, ismerje el az elismervényt, hogy az átvételt elismerhessük.\n\nPostázó",
+      reply: "Tisztelt Postázó!\n\nAz elismervényt elismertem, az átvételt átvettem. A csomag tartalmát nem ismerem, de a tartalmat is elismerem.\n\nÜdvözlettel,\n{name}" },
+    { from: "Tűzvédelmi Megbízott <tuzvedelem@feketetorony.hu>", subject: "Menekülési Útvonal Menekülési Útvonalának Felülvizsgálata",
+      body: "Tisztelt Munkavállaló!\n\nA menekülési útvonal menekülési útvonala jelenleg nem menekíthető. Kérjük, jelezze, melyik úton menekülne, ha menekülnie kellene, de nem szabadna.\n\nTűzvédelmi Megbízott",
+      reply: "Tisztelt Tűzvédelmi Megbízott!\n\nMenekülnék a 14/b melléklet szerinti úton, de nem szabadna. Kérem, ezt az útvonalat is vizsgálják felül, mielőtt használnám.\n\nÜdvözlettel,\n{name}" },
+    { from: "Minőségirányítási Csoport <minoseg@feketetorony.hu>", subject: "Elégedettségi Kérdőív Az Elégedettség Mérésének Méréséről",
+      body: "Tisztelt Munkavállaló!\n\nKérjük, értékelje 1-től 5-ig, mennyire elégedett az elégedettségi kérdőívek számával. Az 1-es és az 5-ös érték egyaránt elégedettségnek minősül.\n\nMinőségirányítás",
+      reply: "Tisztelt Minőségirányítási Csoport!\n\nAz elégedettségem 3-as, ami elégedettségnek minősül. A kérdőívek számával kapcsolatban nincs észrevételem, de ezt az észrevételt is mérjék.\n\nÜdvözlettel,\n{name}" }
+];
+const PRAISE_MAIL = {
+    from: "HR Osztály – Elismerési és Jutalmazási Alosztály <elismeres@feketetorony.hu>",
+    subject: "Munkavállalói Teljesítmény Hivatalos Megelégedettségi Tudomásulvétele (Dicséret)",
+    body: "Tisztelt Munkavállaló!\n\nA Vezérigazgatói Felvonóban lezajlott rövid, de szakmailag megalapozott szóváltása kapcsán a HR Osztály tudomásul veszi, hogy Ön tudomásul vette a vezetői jelenlétet. Ezen magatartása az Elismerési Szabályzat 7. § (2) bekezdése szerint 'kellemesen nem kifogásolható'.\n\nAmennyiben jelen elismerést visszaigazolja, a Frusztrációs Faktorát az Alosztály hivatalosan a felére mérsékli. A visszaigazolást legkésőbb a Trónterembe lépés előtt kérjük megtenni.\n\nÜdvözlettel,\nElismerési és Jutalmazási Alosztály\n(Ez az elismerés nem jelent előléptetést, fizetésemelést vagy bármilyen érdemi változást.)",
+    reply: "Tisztelt Elismerési és Jutalmazási Alosztály!\n\nAz elismerést tisztelettel tudomásul vettem, és visszaigazolom, hogy a visszaigazolás megtörtént. Kérem, a Frusztrációs Faktoromat a mellékelt (nem mellékelt) szabályzat szerint a felére mérsékelni szíveskedjenek.\n\nÜdvözlettel,\n{name}"
+};
+let emailCursor = 0;
+let selectedMailId = null;
+
+function deliverPraiseMail() {
+    const mail = {
+        id: 1000 + player.emails.length, from: PRAISE_MAIL.from, subject: PRAISE_MAIL.subject,
+        body: PRAISE_MAIL.body, reply: PRAISE_MAIL.reply,
+        arrivedAt: player.chapter, read: false, replied: false, penalized: false,
+        special: "halve", noPenalty: true
+    };
+    player.emails.push(mail);
+    updateUI();
+    showToast("🏅 Elismerő levél érkezett! Ha megválaszolod, a KFF a felére csökken.");
+}
+
+// Megválaszol legfeljebb n megválaszolatlan levelet (a legrégebbitől), levelenként -1 KFF
+function answerMails(n) {
+    let done = 0;
+    for (const m of player.emails) {
+        if (done >= n) break;
+        if (!m.replied && !m.special) { m.read = true; m.replied = true; done++; changeStats(0, -1, 0, 0); }
+    }
+    updateUI();
+    return done;
+}
+
+function showToast(msg) {
+    const box = document.getElementById("toast-container");
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.textContent = msg;
+    box.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 5000);
+}
+
+function deliverEmail(silent) {
+    // Minden futamban véletlen sorrend (az első levél mindig a HR-é), és a levelek addig nem ismétlődnek, amíg el nem fogy a készlet
+    if (!player.emailOrder || player.emailOrder.length !== EMAIL_POOL.length) {
+        const rest = [];
+        for (let i = 1; i < EMAIL_POOL.length; i++) rest.push(i);
+        player.emailOrder = [0].concat(shuffle(rest));
+    }
+    const t = EMAIL_POOL[player.emailOrder[emailCursor % EMAIL_POOL.length]];
+    const round = Math.floor(emailCursor / EMAIL_POOL.length);
+    emailCursor++;
+    const mail = {
+        id: emailCursor, from: t.from,
+        subject: (round ? "ISMÉTELT FELSZÓLÍTÁS: " : "") + t.subject,
+        body: t.body, reply: t.reply,
+        arrivedAt: player.chapter, read: false, replied: false, penalized: false
+    };
+    player.emails.push(mail);
+    updateUI();
+    if (!silent) showToast(`📧 Új levél érkezett: ${mail.subject}`);
+}
+
+// Fejezetváltás: új levél (minden 4. fejezet végén) + mulasztási szankció
+function advanceChapter() {
+    if (player.chapter > 0 && player.chapter % 4 === 0) deliverEmail(false);
+    player.chapter++;
+    let penalty = 0;
+    player.emails.forEach(m => {
+        if (!m.replied && !m.penalized && !m.noPenalty && player.chapter - m.arrivedAt >= 4) {
+            m.penalized = true;
+            penalty += 5;
+        }
+    });
+    updateUI();
+    if (penalty) {
+        showToast(`⚠️ Lejárt határidő! Megválaszolatlan levél miatt +${penalty} KFF`);
+        changeStats(0, penalty, 0, 0);
+    }
+}
+
+function openInbox() {
+    selectedMailId = null;
+    renderInbox();
+    document.getElementById("inboxModal").style.display = "flex";
+}
+function closeInbox() {
+    if (typingInterval) { clearInterval(typingInterval); typingInterval = null; }
+    document.getElementById("inboxModal").style.display = "none";
+}
+
+function mailStatus(m) {
+    if (m.replied) return "✅ megválaszolva";
+    if (m.noPenalty) return "🏅 elismerés – nincs határidő, a válasz felezi a KFF-et";
+    if (m.penalized) return "⛔ lejárt (+5 KFF)";
+    return `⏳ még ${m.arrivedAt + 4 - player.chapter} lépés a határidőig`;
+}
+
+function renderMailList() {
+    const list = document.getElementById("mail-list");
+    if (!list) return;
+    list.innerHTML = player.emails.slice().reverse().map(m => `
+        <div class="mail-row" onclick="selectMail(${m.id})" style="background:${m.id === selectedMailId ? '#e6f0fb' : (m.read ? '#fff' : '#fffbe0')};">
+            <strong>${m.read ? '' : '● '}${escapeHtml(m.subject)}</strong><br>
+            <small>${escapeHtml(m.from)} — ${mailStatus(m)}</small>
+        </div>`).join("");
+}
+
+function renderInbox() {
+    const c = document.getElementById("email-view-container");
+    const mail = player.emails.find(m => m.id === selectedMailId);
+    let detail = `<div style="padding:20px; color:#555;">Válassz egy levelet a listából. (Megválaszolatlan: ${player.emails.filter(e => !e.replied).length})</div>`;
+    if (mail) {
+        detail = `
+        <div class="email-meta">
+            <div><strong>Címzett:</strong> ${escapeHtml(player.name || "Kiválasztott")} &lt;alkalmazott@feketetorony.hu&gt;</div>
+            <div><strong>Feladó:</strong> ${escapeHtml(mail.from)}</div>
+            <div><strong>Tárgy:</strong> ${escapeHtml(mail.subject)}</div>
+            <div><strong>Státusz:</strong> ${mailStatus(mail)}</div>
+        </div>
+        <div class="email-body-content"><p style="white-space:pre-line; margin:0;">${escapeHtml(mail.body)}</p></div>
+        <div id="reply-section" style="padding:15px; background:#f3f2f1; text-align:right;">
+            ${!mail.replied
+                ? `<button style="background:#0078d4; color:white; border:none; padding:10px 20px; font-weight:bold;" onclick="replyToMail(${mail.id})"> ↩️ Válaszolás (-1 KFF)</button>`
+                : `<span style="color:#1e7e34; font-weight:bold;"> ✅ Válasz elküldve!</span>`}
+        </div>
+        <div id="typewriter-box" style="display:none;" class="email-reply-box">
+            <div id="typewriter-text" class="typing-cursor" style="font-family:monospace; color:#333; white-space:pre-line;"></div>
+        </div>`;
+    }
+    c.innerHTML = `<div id="mail-list" style="max-height:200px; overflow-y:auto; border-bottom:2px solid #0078d4;"></div>${detail}`;
+    renderMailList();
+}
+
+function selectMail(id) {
+    if (typingInterval) { clearInterval(typingInterval); typingInterval = null; }
+    selectedMailId = id;
+    const m = player.emails.find(e => e.id === id);
+    if (m) m.read = true;
+    updateUI();
+    renderInbox();
+}
+
+function replyToMail(id) {
+    const mail = player.emails.find(e => e.id === id);
+    if (!mail || mail.replied) return;
+    mail.read = true; mail.replied = true;
+    if (mail.special === "halve") {
+        const half = Math.floor(player.kff / 2);
+        changeStats(0, half - player.kff, 0, 0);   // elismerő levél: a KFF a felére csökken
+        showToast(`🏅 A KFF a felére csökkent: ${player.kff}`);
+    } else {
+        changeStats(0, -1, 0, 0);   // megválaszolt levél: -1 KFF (minimum 0)
+    }
+    updateUI();
+    renderMailList();
+    document.getElementById("reply-section").style.display = "none";
+    document.getElementById("typewriter-box").style.display = "block";
+
+    const replyText = mail.reply.replace("{name}", player.name);
+    let index = 0;
+    const targetElem = document.getElementById("typewriter-text");
+    if (typingInterval) clearInterval(typingInterval);
+    typingInterval = setInterval(() => {
+        if (index < replyText.length) {
+            targetElem.textContent += replyText.charAt(index);
+            index++;
+        } else {
+            clearInterval(typingInterval);
+            typingInterval = null;
+            targetElem.classList.remove("typing-cursor");
+        }
+    }, 25);
+}
+
+/* ============ KÁVÉ ============ */
+function openCoffee() {
+    if (player.gold < 2) { customAlert("Nincs elég ÁFA-s Aranyad (2 kell)!"); return; }
+    coffeePressure = 0;
+    document.getElementById("coffee-status").textContent = "Nyomás: 0%";
+    document.getElementById("coffeeModal").style.display = "flex";
+}
+function closeCoffee() { document.getElementById("coffeeModal").style.display = "none"; }
+function pumpCoffee() {
+    coffeePressure += 25;
+    document.getElementById("coffee-status").textContent = `Nyomás: ${Math.min(100, coffeePressure)}%`;
+    if (coffeePressure >= 100) {
+        coffeePressure = 0;
+        closeCoffee();
+        changeStats(6, -1, -2, 0);
+        customAlert("Kávé kész! +6 KT feltöltve.");
+    }
+}
+
+function openHelp() { document.getElementById("helpModal").style.display = "flex"; }
+function closeHelp() { document.getElementById("helpModal").style.display = "none"; }
+
+/* ============ JÁTÉKLOGIKA ============ */
+function changeStats(ktDiff, kffDiff, goldDiff, atkDiff) {
+    player.kt = Math.min(player.maxKt, player.kt + ktDiff);
+    player.kff = Math.max(0, player.kff + kffDiff);
+    player.gold += goldDiff;
+    player.atk += atkDiff;
+    if (isDead()) {
+        player.gameOverReason = player.kt <= 0 ? "kt" : "kff";
+        if (player.kt < 0) player.kt = 0;
+        inCombat = false;
+        updateUI();
+        goToScene("game_over");
+        return false;
+    }
+    updateUI();
+    return true;
+}
+
+function addItem(itemName) { if (!player.inventory.includes(itemName)) player.inventory.push(itemName); updateUI(); }
+
+function addStamp(stampName) {
+    if (!player.stamps.includes(stampName)) player.stamps.push(stampName);
+    if (stampName === "ELLENŐRIZVE") markTaskDone("stamp_1");
+    if (stampName === "JÓVÁHAGYVA") markTaskDone("stamp_2");
+    updateUI();
+}
+
+function goToScene(sceneKey, stay) {
+    // A kiégés után csak a game_over jelenet engedélyezett
+    if (isDead() && sceneKey !== "game_over") return;
+    inCombat = false;
+
+    // A már megvert nyomtatóval nem harcolhatunk újra
+    if (sceneKey === "printer_room" && player.printerDone) sceneKey = "printer_cleared";
+
+    const scene = storyData[sceneKey];
+    if (!scene) return;
+    if (sceneKey !== "game_over" && !stay) { advanceChapter(); if (isDead()) return; }
+    if (scene.onEnter && !restoring) { scene.onEnter(); if (isDead() && sceneKey !== "game_over") return; }
+
+    const prevKey = currentSceneKey;
+    const bridge = (!stay && !restoring && prevKey !== sceneKey) ? getBridge(sceneKey, prevKey) : "";
+    const hint = NEXT_HINT[sceneKey] || "";
+    document.getElementById("story-text").innerText = (bridge ? bridge + "\n\n" : "") + scene.text + (hint ? "\n\n" + hint : "");
+
+    const marginContainer = document.getElementById("margin-container");
+    if (scene.notes) {
+        marginContainer.style.display = "flex";
+        document.getElementById("note-inspector").innerText = scene.notes.inspector;
+        document.getElementById("note-veteran").innerText = scene.notes.veteran;
+    } else marginContainer.style.display = "none";
+
+    const optionsContainer = document.getElementById("options");
+    optionsContainer.innerHTML = "";
+    scene.options.forEach(opt => {
+        if (opt.condition && !opt.condition()) return;
+        const btn = document.createElement("button");
+        btn.innerText = opt.text;
+        if (opt.type === "combat") btn.classList.add("btn-combat");
+        else if (opt.type === "tactical") btn.classList.add("btn-tactical");
+        btn.onclick = () => { if (opt.action) opt.action(); else if (opt.target) goToScene(opt.target); };
+        optionsContainer.appendChild(btn);
+    });
+
+    currentSceneKey = sceneKey;
+    if (sceneKey === "game_over" || sceneKey.startsWith("ending_")) clearSave();
+    else if (!restoring) saveGame(false);
+}
+
+/* ============ HARCRENDSZER ============ */
+function startCombat(enemyKey, winSceneKey) {
+    currentEnemy = { ...enemies[enemyKey] };
+    returnSceneAfterCombat = winSceneKey;
+    player.ultUsed = false;
+    player.snackUsed = false;
+    player.eyeRollActive = false;
+    combatLog = "A harc elkezdődött!";
+    inCombat = true;
+    renderCombatUI();
+}
+
+function renderCombatUI() {
+    document.getElementById("margin-container").style.display = "none";
+    document.getElementById("story-text").innerHTML =
+        `<strong class="text-red">MUNKAÜGYI PÁRBAJ: ${currentEnemy.name}</strong><br>` +
+        `Ellenség HP: <span class="text-red">${currentEnemy.hp}</span> / ${currentEnemy.maxHp} | Te: KT ${player.kt}/${player.maxKt}, KFF ${player.kff}<br>` +
+        `<em>${combatLog}</em>`;
+
+    const optionsContainer = document.getElementById("options");
+    optionsContainer.innerHTML = "";
+
+    const addBtn = (cls, text, action) => {
+        const b = document.createElement("button");
+        b.classList.add(cls);
+        b.innerText = text;
+        b.onclick = () => executeCombatAction(action);
+        optionsContainer.appendChild(b);
+    };
+
+    addBtn("btn-combat", " 🗣️ Passzív-Agresszív Támadás", "attack");
+    addBtn("btn-tactical", player.classKey === "warrior" ? " 📁 Kötelező Pihenőidő (Dupla Páncél)" : " 📁 Védekezés Szabályzattal (+2 Páncél)", "defend");
+
+    if (player.raceKey === "halfling" && !player.snackUsed)
+        addBtn("btn-tactical", " 🥪 Uzsonnapause (+5 KT feltöltése szendviccsel)", "snack");
+
+    if (player.classKey === "rogue" && !player.eyeRollActive)
+        addBtn("btn-ult", " 🙄 Teátrális Szemforgatás (Elterelés -> Dupla sebzésű csapás)", "eyeroll");
+
+    if (!player.ultUsed)
+        addBtn("btn-ult", ` 💥 VÉGSŐ CSAPÁS: ${classes[player.classKey].ultName}`, "ult");
+}
+
+function winCombat(text) {
+    inCombat = false;
+    const gold = currentEnemy.gold;
+    const next = returnSceneAfterCombat;
+    customAlert(`${text} Szereztél ${gold} ÁFA-s Aranyat.`, () => {
+        changeStats(0, 0, gold, 0);
+        if (player.companion === "ghost" && !isDead()) { changeStats(3, 0, 0, 0); showToast("👻 A Kávéfőző-Szellem kávéval kínál: +3 KT."); }
+        goToScene(next);
+    });
+}
+
+function executeCombatAction(actionType) {
+    if (!inCombat || isDead()) return;
+    tempArmor = 0;
+
+    const heroBonus = (player.raceKey === "human" && player.kt === 1) ? 2 : 0;
+    const kffPenalty = Math.floor(player.kff / 3);
+
+    if (actionType === "attack") {
+        const missChance = Math.max(5, Math.min(40, 20 - 6 * player.stats.ugy));   // Ügyesség csökkenti a mellélövést
+        if (!player.eyeRollActive && Math.random() * 100 < missChance) {
+            combatLog = `Mellé! A csapásod célt tévesztett (${missChance}% esély volt rá).`;
+        } else {
+            const multiplier = player.eyeRollActive ? 2 : 1;
+            const dmg = Math.max(1, (player.atk + heroBonus - kffPenalty + Math.floor(Math.random() * 4)) * multiplier);
+            currentEnemy.hp -= dmg;
+            combatLog = `Bevitt sebzés: ${dmg}.` +
+                (heroBonus ? " (Főhős-szindróma +2!)" : "") +
+                (kffPenalty ? ` (Frusztráció -${kffPenalty})` : "") +
+                (player.eyeRollActive ? " (Szemforgatás: garantált találat, dupla sebzés!)" : "");
+        }
+        player.eyeRollActive = false;
+    }
+    else if (actionType === "defend") {
+        tempArmor = (player.classKey === "warrior") ? Math.max(2, player.bp * 2) : 2;
+        combatLog = `Védekezel (+${tempArmor} Páncél).`;
+    }
+    else if (actionType === "snack") {
+        player.snackUsed = true;
+        changeStats(5, 0, 0, 0);
+        combatLog = "Uzsonnapause! Ettél egy szendvicset és visszakaptál 5 KT-t.";
+    }
+    else if (actionType === "eyeroll") {
+        player.eyeRollActive = true;
+        combatLog = "Forgatod a szemed. A következő támadásod garantáltan talál és duplát sebez! (Az ellenfél közben támad.)";
+    }
+    else if (actionType === "ult") {
+        player.ultUsed = true;
+        const dmg = Math.max(1, (player.atk + heroBonus - kffPenalty) * classes[player.classKey].ultMult);
+        currentEnemy.hp -= dmg;
+        combatLog = `KRITIKUS CSAPÁS! Bevitt sebzés: ${dmg}!`;
+    }
+
+    if (currentEnemy.hp <= 0) { winCombat("Megnyerted a csatát!"); return; }
+
+    // Társ: Gyakornok
+    if (player.companion === "intern") {
+        if (Math.random() < 0.35) {
+            currentEnemy.hp -= 3;
+            combatLog += " | 🏖️ A Gyakornok 'szabadságáról' beszól egy hivatalos levelet: 3 sebzés!";
+            if (currentEnemy.hp <= 0) { winCombat("A Gyakornok váratlanul bejelentkezett és végzett az ellenféllel!"); return; }
+        } else if (Math.random() < 0.15) combatLog += " | 🏖️ A Gyakornok épp szabadságon van.";
+    }
+
+    // Ellenfél támadása
+    let enemyDmg = Math.max(1, currentEnemy.atk - (player.bp + tempArmor));
+    if (player.companion === "ghost" && Math.random() < 0.2) {
+        enemyDmg = Math.max(1, Math.floor(enemyDmg / 2));
+        combatLog += " | 👻 A Kávéfőző-Szellem gőzfelhőbe burkol: a sebzés fele.";
+    }
+    if (!changeStats(-enemyDmg, 0, 0, 0)) return; // kiégtél -> game over
+
+    // Melankolikus Törpe "Súlyos Panasz"
+    if (player.raceKey === "dwarf") {
+        const retortDmg = 3;
+        currentEnemy.hp -= retortDmg;
+        combatLog += ` | 🌩️ SÚLYOS PANASZ: +${retortDmg} mentális sebzés!`;
+        if (currentEnemy.hp <= 0) { winCombat("Súlyos Panasszal elintézted az ellenfelet!"); return; }
+    }
+
+    // Újraindítási Hurok Gólem: minden körben 10% eséllyel újraindul a harc
+    if (currentEnemy.rebootChance && currentEnemy.hp > 0 && Math.random() < currentEnemy.rebootChance) {
+        currentEnemy.hp = currentEnemy.maxHp;
+        combatLog += " | 🔄 A Gólem hirtelen újraindult! A sebei eltűntek, a harc kezdődik elölről.";
+    }
+
+    renderCombatUI();
+}
+
+startCharacterCreation();
+</script>
+</body>
+</html>
