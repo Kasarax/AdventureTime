@@ -1,0 +1,1391 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mnemosyne: A Memória-építészet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Elrendezés: fent tapadó terminál-HUD (4 mérő), alatta egyoszlopos regényoldal 62 karakteres sorhosszal,
+   a döntések mono-címkés konzolsorok. Egyetlen sötét világ, tudatosan nincs világos téma. */
+:root{
+  --bg:#0a0c12; --bg2:#0f1320; --panel:#121726; --line:#232b42;
+  --fg:#d9deec; --dim:#8791ad;
+  --cyan:#27e6ff; --magenta:#ff2fa3; --amber:#ffb62e; --amber-soft:#ffd58a;
+  --net:#9b8cff; --danger:#ff4d5e;
+  --sys:var(--cyan);
+  --f-display:"Chakra Petch",system-ui,sans-serif;
+  --f-body:"Spectral",Georgia,serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:18px;line-height:1.7}
+button{font:inherit;color:inherit}
+#rain{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 50%,color-mix(in srgb,var(--magenta) 60%,transparent) 100%);
+  opacity:calc(var(--par,0)*var(--par,0)*.95);transition:opacity .8s}
+#scan{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+#app{position:relative;z-index:2;max-width:900px;margin:0 auto;
+  padding-block:14px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding-block:6px 14px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 2.4s infinite}
+.save-ind{color:var(--cyan);opacity:0;transition:opacity .4s}
+.save-ind.on{opacity:1}
+.tools{display:flex;gap:8px}
+.btn{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--line);color:var(--fg);padding:8px 12px;cursor:pointer;border-radius:2px}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn.primary{border-color:var(--cyan);color:var(--bg);background:var(--cyan);font-weight:500}
+.btn.primary:hover{background:transparent;color:var(--cyan)}
+.btn.warn{border-color:var(--magenta);color:var(--magenta)}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+  padding:12px 14px;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:2px}
+.meter{--c:var(--cyan);min-width:0;font-family:var(--f-mono)}
+.m-ri{--c:var(--amber)} .m-net{--c:var(--net)} .m-par{--c:var(--magenta)}
+.meter.crit{--c:var(--danger)}
+.meter{cursor:pointer} .meter:hover .ab{text-decoration:underline}
+.mh{display:flex;align-items:baseline;gap:8px;font-size:12px;letter-spacing:.08em;min-height:20px}
+.ab{color:var(--c);font-weight:500}
+.nm{color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.val{color:var(--fg);font-variant-numeric:tabular-nums;margin-left:auto}
+.delta{font-size:11px;padding:0 4px;border-radius:2px;animation:chip 3s forwards}
+.delta.good{color:var(--bg);background:var(--cyan)} .delta.bad{color:var(--bg);background:var(--magenta)}
+.delta:empty{display:none}
+.bar{height:6px;background:var(--bg2);margin-top:5px;border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);box-shadow:0 0 10px var(--c);transition:width .6s ease}
+.meter.crit .bar i{animation:blink 1s infinite}
+.m-par.crit .ab::after{content:" // FIGYELNEK";font-size:10px}
+
+main{padding-top:30px;min-height:60vh}
+.kick{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);display:flex;gap:10px;flex-wrap:wrap}
+.kick span:last-child{color:var(--dim)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.9rem,6vw,3rem);line-height:1.1;margin:10px 0 22px;
+  text-transform:uppercase;letter-spacing:.02em;text-wrap:balance;outline:none}
+body.lowci h1{animation:jit .22s steps(2) infinite;text-shadow:2px 0 var(--magenta),-2px 0 var(--cyan)}
+.story{max-width:62ch}
+.story p{margin:0 0 1.05em;animation:rise .6s ease both;animation-delay:calc(var(--i)*.26s)}
+.story p.dial{color:var(--amber-soft);padding-left:1em;border-left:1px solid var(--line)}
+.story p.sys{font-family:var(--f-mono);font-size:13px;line-height:1.5;color:var(--sys);letter-spacing:.04em;transition:color .6s}
+.story p.echo{color:var(--dim);font-style:italic}
+.story em{color:var(--fg)}
+.choices{display:grid;gap:10px;margin-top:30px;max-width:720px;animation:rise .6s ease both;animation-delay:var(--d,.5s)}
+.choice{display:flex;gap:14px;align-items:flex-start;text-align:left;width:100%;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:13px 15px;line-height:1.5}
+.choice:hover:not(.locked){border-color:var(--cyan);background:var(--bg2);transform:translateX(3px)}
+.choice{transition:transform .15s,border-color .15s,background .15s}
+.key{font-family:var(--f-mono);font-size:12px;border:1px solid var(--dim);color:var(--dim);padding:1px 7px;margin-top:3px;flex:none}
+.choice:hover:not(.locked) .key{border-color:var(--cyan);color:var(--cyan)}
+.ctext{flex:1;min-width:0}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tag{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--cyan);color:var(--cyan)}
+.tag.ko{border-color:var(--amber);color:var(--amber)}
+.choice.locked{opacity:.55;cursor:not-allowed;border-style:dashed}
+.choice.aux{border-color:var(--magenta)}
+.choice.aux .ctext{color:var(--magenta);font-style:italic}
+
+.title-box{max-width:62ch}
+.mega{font-family:var(--f-display);font-weight:700;font-size:clamp(2.6rem,12vw,6rem);line-height:.95;letter-spacing:.03em;margin:0;
+  text-shadow:2px 0 var(--magenta),-2px 0 var(--cyan);animation:glitch 6s infinite}
+.sub{font-family:var(--f-mono);letter-spacing:.3em;text-transform:uppercase;color:var(--amber);font-size:clamp(.78rem,3vw,1rem);margin:14px 0 28px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:26px 0}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 22px;margin:28px 0;font-size:15px;line-height:1.5}
+.legend div{border-top:1px solid var(--line);padding-top:8px}
+.legend b{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;display:block;margin-bottom:2px}
+.pips{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.pip{border:1px solid var(--line);padding:3px 8px}
+.pip.on{border-color:var(--amber);color:var(--amber)}
+.fine{font-family:var(--f-mono);font-size:12px;color:var(--dim);margin-top:18px;line-height:1.6}
+
+.banner{font-family:var(--f-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:4px 10px;border:1px solid var(--amber);color:var(--amber);display:inline-block}
+.banner.over{border-color:var(--danger);color:var(--danger)}
+.sumrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:26px 0;max-width:720px}
+.sum{border:1px solid var(--line);padding:8px 10px;font-family:var(--f-mono);font-size:12px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.sum b{display:block;color:var(--fg);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+
+.modal{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);border:1px solid var(--cyan);max-width:640px;width:100%;padding:20px;margin-block:24px}
+.sheet h2{font-family:var(--f-display);text-transform:uppercase;margin:0 0 4px;font-size:1.5rem}
+.sheet h3{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin:22px 0 8px;font-weight:500}
+.ev{border-top:1px solid var(--line);padding:8px 0;font-size:16px;line-height:1.5}
+.ev b{font-family:var(--f-display);display:block;color:var(--cyan)}
+.ev.miss{color:var(--dim);font-family:var(--f-mono);font-size:12px;letter-spacing:.1em}
+.sheet .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+body.sys-t1{--sys:var(--amber)} body.sys-t2{--sys:var(--danger)} body.sys-t3{--sys:var(--net)}
+#sysbar{position:fixed;left:0;right:0;bottom:0;z-index:3;pointer-events:none;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--sys);padding:8px max(16px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:linear-gradient(transparent,color-mix(in srgb,var(--bg) 88%,transparent));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .6s;text-shadow:0 0 8px currentColor}
+body.sys-t3 #sysbar{animation:vib .18s steps(2) infinite}
+body.sys-t3 .story p.sys{animation:vib .18s steps(2) infinite}
+.ct{display:inline;transition:opacity .1s}
+body.glitch .choice:not(:hover):not(:focus-visible){animation:flo 3.6s ease-in-out infinite;animation-delay:var(--gd,0s)}
+.timer{margin-bottom:6px;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.timer .tl{display:flex;justify-content:space-between;gap:10px}
+.tbar{height:6px;margin-top:5px;background:var(--bg2);border:1px solid var(--line);overflow:hidden}
+.tbar i{display:block;height:100%;width:100%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.timer.mid{color:var(--amber)} .timer.mid .tbar i{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.timer.low{color:var(--magenta)} .timer.low .tbar i{background:var(--magenta);box-shadow:0 0 10px var(--magenta);animation:blink .5s infinite}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap;border-top:1px solid var(--line);padding:12px 0}
+.setrow>span{min-width:0;flex:1 1 200px;font-size:16px;line-height:1.4}
+.setrow small{display:block;color:var(--dim);font-size:13px}
+.seg{display:flex;gap:6px}
+.btn.on{border-color:var(--cyan);color:var(--cyan);background:color-mix(in srgb,var(--cyan) 12%,transparent)}
+@keyframes vib{50%{transform:translateX(1.5px);opacity:.7}}
+@keyframes flo{0%,100%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}60%{transform:translate(-1px,1px)}}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes pulse{50%{opacity:.35}}
+@keyframes blink{50%{opacity:.45}}
+@keyframes chip{0%,80%{opacity:1}100%{opacity:0}}
+@keyframes jit{0%{transform:translate(0)}50%{transform:translate(2px,-1px)}100%{transform:translate(-1px,1px)}}
+@keyframes glitch{0%,93%,100%{transform:none;clip-path:none}94%{transform:translate(4px,0);clip-path:inset(10% 0 55% 0)}96%{transform:translate(-5px,0);clip-path:inset(60% 0 8% 0)}98%{transform:translate(2px,0)}}
+@media (max-width:620px){
+  body{font-size:17px}
+  .hud{grid-template-columns:repeat(2,1fr);gap:10px 14px}
+  .nm{display:none}
+  .legend{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+<div id="vig" aria-hidden="true"></div>
+<div id="scan" aria-hidden="true"></div>
+<div id="sysbar" aria-hidden="true" hidden></div>
+
+<div id="app">
+  <header class="top">
+    <div class="brand"><span class="dot"></span><span>Mnemosyne Corp // Restaurátor-terminál</span><span class="save-ind" id="saveInd">● mentve</span></div>
+    <div class="tools">
+      <button class="btn" data-act="settings" id="btnSet">Beállítások</button>
+      <button class="btn" data-act="journal" id="btnJournal">Napló</button>
+      <button class="btn" data-act="menu" id="btnMenu">Menü</button>
+    </div>
+  </header>
+  <section class="hud" id="hud" aria-label="Rex állapota" hidden></section>
+  <main id="stage" aria-live="polite"></main>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mt" id="sheet"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Tárolás ---------- */
+var SAVE_KEY='mnemosyne.save.v1', END_KEY='mnemosyne.endings.v1';
+var memStore={};
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return memStore[k]||null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){memStore[k]=v}}
+
+var CFG_KEY='mnemosyne.cfg.v1';
+var cfg={glitch:true,timer:'normal',sound:false};
+try{var c0=JSON.parse(lsGet(CFG_KEY)||'null');
+  if(c0){if(typeof c0.glitch==='boolean')cfg.glitch=c0.glitch;
+    if(['off','normal','long'].indexOf(c0.timer)>=0)cfg.timer=c0.timer;
+    if(typeof c0.sound==='boolean')cfg.sound=c0.sound}}catch(e){}
+function saveCfg(){lsSet(CFG_KEY,JSON.stringify(cfg))}
+var reduced=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ---------- Statok ---------- */
+var STATS=[
+  {k:'ci',ab:'CI',nm:'Kognitív Integritás',d:'Mentális HP. Traumák és erőszakos emlékek apasztják. Nullán tudat-összeomlás következik, alacsonyan pedig bátor lehetőségek zárulnak le, és paranoiás látomások törnek rád.'},
+  {k:'ri',ab:'RI',nm:'Valóság-Index',d:'Mennyire tudod elkülöníteni a beültetett emlékeidet a valóditól. Alacsonyan romlik a szöveg és hamis emlékek csalogatnak, magasan észreveszed a Cég manipulációit.'},
+  {k:'net',ab:'NET',nm:'Hálózati Hozzáférés',d:'A technikai szinted. Magas értéknél rejtett fájlok, rövidítések és a rendszerátvétel nyílik meg.'},
+  {k:'par',ab:'PAR',nm:'Paranoia',d:'Csak nőhet a nyomozással: ennyire figyel a Mnemosyne. Százon a Cég elkap.'}
+];
+var KEYS=['ci','ri','net','par'];
+var ABBR={ci:'CI',ri:'RI',net:'NET',par:'PAR'};
+
+var EV={
+  ev_meta:['Átírt ügyirat','Az ügyirat metaadatait a Mnemosyne szerkesztette, nem a rendőrség.'],
+  ev_voices:['A kórus suttogása','A Synapse tömege egyetlen nevet ismétel: Fekete Nap.'],
+  ev_origin:['Megrendelt hálózat','Az illegálisnak mondott Synapse alaphálózata a Mnemosyne szervereiről fut. A Cég tudott róla.'],
+  ev_replay:['A gyilkos keze','A tettes keze egy csavart rézérmét forgat. Pontosan olyat, mint a zsebemben.'],
+  ev_name:['Végre, Rex','Hegedűs az utolsó pillanatában a nevemen szólította a gyilkost.'],
+  ev_timestamp:['Ismétlődő időbélyeg','A gyilkosság felvétele harmincegy iteráció óta ismétlődik.'],
+  ev_lethe:['Léthé-protokoll','Az archívumban: ALANY-0, kódnév REX, iteráció: 31. Kísérleti személy vagyok.'],
+  ev_footage:['A tükrök forrása','A felvételeket a Műtő kamerahálózata rögzítette: a Cég figyelt, miközben ölök.'],
+  ev_restored:['Visszanyert emlék','Léthé-2: Hegedűs négymillió elme átírására készült. A gyilkosság megelőzés volt.'],
+  ev_broker:['Vak Mihály tanúsága','Ékes Nóra holttestét sosem találták meg. A halálát a Cég jelentette be.'],
+  ev_flawed:['Hibás emlék','Az emlékem Nóráról túl tökéletes. Nincs benne eső. Utólag szerkesztették.'],
+  ev_disk:['Fekete Nap adatkocka','Hegedűs széfjében: a Fekete Nap-protokoll harmadik példánya, kézírásos címkével.'],
+  ev_witness:['Zsófia néni tanúsága','Hetente járt Hegedűshöz egy ezüst hajú nő, aki sosem pislogott, és mindig a madarat nézte.'],
+  ev_alany1:['Alany-1 akta','Fehér Lilla ütemterve ugyanaz, mint az enyém volt: törlés, beültetés, újrahasznosítás.'],
+  ev_cop:['Kárpáti felvétele','Kárpáti nyomozót a Cég fizeti. A beszélgetésünk felvétele bizonyítja, hogy tudott Hegedűs haláláról.'],
+  ev_serial:['M-0001','A rézérmém élén sorozatszám: M-0001. A Cég mintadarabja, nem emlék.'],
+  ev_whisper:['A falak üzenete','Nem a hurok az ellenség. A karbantartó az, és a karbantartó a Cég.']
+};
+var EV_KEYS=Object.keys(EV);
+var ENDINGS={18:'Leleplezés',19:'Az Új Építész',20:'Léthé',21:'A Bábu',47:'Dávid',66:'A Harmadik Út'};
+var ENDN=Object.keys(ENDINGS).length;
+
+/* ---------- Állapot ---------- */
+var st=null, mode='title', armed=false, SC={};
+function newState(){return {scene:1,ci:100,ri:60,net:40,par:0,flags:{},v:{loops:0},ret:null,echo:'',steps:0}}
+function clamp(n){return Math.max(0,Math.min(100,n))}
+function k3count(){return (st.flags.ev_serial?1:0)+(st.flags.ev_cop?1:0)+(st.flags.ally_lilla?1:0)}
+function evCount(){var n=0;EV_KEYS.forEach(function(k){if(st.flags[k])n++});return n}
+
+/* ---------- Jelenetek ---------- */
+function add(id,o){o.id=id;SC[id]=o}
+
+add(1,{title:'Eső a Dunán',loc:'Új-Budapest · Pesti oldal · 31. szint · 23:14',
+ text:[
+  'Az eső nem mos tisztára semmit Új-Budapesten. Csak lemossa a felszínt, a zsírosabb valóságot meg a csatornákba küldi. Az irodám ablakán át a Mnemosyne-torony vörös hologramja ég a Duna fölött, mint egy be nem gyógyult seb.',
+  'Varga hadnagy tizenegykor lép be, kopogás nélkül, nyirkos kabátban, a szeme alatt két fekete félhold. Nem ül le. Egy adatlapot csúsztat az asztalomra. Fizikai papírt, mert a papír nem tud hazudni egy hálózatnak.',
+  '— Hegedűs Lőrinc, a Mnemosyne Léthé-osztályának igazgatója. Három napja halott. A Synapse-ben ölték meg, négyezer összekötött elme közepén, és egyikük sem látott semmit. A tettes a Szent Imre-klinikán fekszik: Szél Iván, tizenkilenc éves, agyhalál szélén, de él. Te vagy az egyetlen, aki be tud menni hozzá.',
+  'Nem kérdezi, hogy akarom-e. Az emlék-restaurátorok nem azért élnek, hogy kérdezzenek.'],
+ choices:[
+  {t:'Elvállalom. Add a beteg aktáját.',to:2},
+  {t:'Ki fizet? A Cég sosem enged rendőrt az igazgatója fejébe.',to:2,fx:{ri:3,par:5},echo:'Varga egy pillanatra elfordítja a tekintetét. Ez elég válasz.'},
+  {t:'Átfuttatom az aktát az implantátumomon.',to:2,req:{net:[35]},fx:{net:3},set:['ev_meta'],echo:'Az implantátum halkan sípol. Az akta metaadatait nem a rendőrség írta át.'}
+ ]});
+
+add(2,{title:'Csatlakozás',loc:'Szent Imre-klinika · 4-es kórterem · 00:02',
+ text:[
+  'A kórterem szagát az ózon és a régi izzadság adja. Szél Iván a falnak döntött ágyon fekszik, a halántékán a Synapse-tüske még mindig villog, mintha a fiú agya a lehalt test fölött is kapcsolatot keresne valakivel.',
+  'Felcsatolom a restaurátor-hevedert. A kezem magától megtalálja a zsebemben a csavart rézérmét, az egyetlen tárgyat, amit az első ébredésemkor magamnál találtam. Nem tudom, honnan van. Sosem tudtam.',
+  'A biztonsági protokoll három lehetőséget kínál. A csatlakozás visszafordíthatatlanul közelít.'],
+ choices:[
+  {t:'Megperdítem a rézérmét. Horgony-rituálé, mielőtt belépek.',to:3,fx:{ri:10}},
+  {t:'Gyors csatlakozás, védőprotokoll nélkül.',to:3,fx:{net:8,ci:-5}},
+  {t:'Lehallgatásmentes alagút: a klinika monitorát hurokba teszem.',to:3,req:{net:[40]},fx:{net:4,par:-8}}
+ ]});
+
+add(3,{title:'A Kollektív',loc:'Synapse · Rétegszint 0 · Rain Club',aux:true,
+ text:[
+  'Aztán zuhanok. Nem lefelé: befelé, minden irányban egyszerre. Amikor a világ újra összeáll, egy végtelen éjszakai klubban állok, ahol az eső fölfelé hullik, és minden csepp egy elfelejtett mondat.',
+  'A tömeg négyezer alakból áll. Mind ugyanabba az irányba fordul, mintha egyetlen test lenne, amelyet véletlenül sok emberre szabtak. Fényfonalak futnak a halántékaik között, és halkan zúgnak, mint egy távoli transzformátor.',
+  'A színpadon, mozdulatlanul, Hegedűs Lőrinc teste lebeg. A mellkasán nincs seb. Csak egy fekete, kör alakú üresség, mintha kivágtak volna egy darabot a világból.'],
+ choices:[
+  {t:'Belemegyek a tömegbe, és követem a fonalakat.',to:4},
+  {t:'Megnézem a holttestet a színpadon.',to:5},
+  {t:'Megcsapolom a Synapse gerinchálózatát: valami rejtett csatorna zúg a padló alatt.',to:7,req:{net:[45]},fx:{par:3}},
+  {t:'A pult végén egy csonka alak integet: Vak Mihály, a memória-kereskedő.',to:11,req:{not:['met_broker']},hide:true}
+ ]});
+
+add(4,{title:'A Tömeg',loc:'Synapse · Rétegszint 0 · A fonalak között',aux:true,enter:{fx:{ci:-8,ri:-5}},
+ text:[
+  'A fonalak közé lépek, és a magam hangja azonnal elnémul. Négyezer ember gondolata zúg át rajtam: feszültség, vágy, valaki fél a holnaptól, valaki a tegnapot siratja. Nem tudom, melyik érzés az enyém.',
+  '— Mi vagyunk. Mi vagyunk. Mi vagyunk — mondja a kórus, és a szó fáj, mintha vasat nyalnék.',
+  'Mélyen, a zaj alatt, egyetlen hang ismétli ugyanazt a két szót.'],
+ choices:[
+  {t:'Kitépem magam a hálóból.',to:5,fx:{ri:6,ci:-2}},
+  {t:'Hagyom, hogy a kórus beszéljen.',to:6,fx:{ci:-8,ri:-4},set:['ev_voices'],echo:'A két szó: Fekete Nap.'},
+  {t:'Visszakövetem a fonalat a forrásig. Ki kötötte össze őket?',to:5,req:{net:[50]},fx:{net:3,par:6},set:['ev_origin'],echo:'A fonalak nem a pincéből jönnek, hanem a Mnemosyne-torony szerverterméből. Ezt a hálózatot nem elfedték. Megrendelték.'}
+ ]});
+
+add(5,{title:'A Gyilkosság',loc:'Synapse · Rétegszint 0 · A színpad',aux:true,enter:{fx:{ci:-4}},
+ text:[
+  'A színpad körül az idő sűrű, mint a szirup. Beillesztem a restaurátor-szondát az áldozat halálpillanatába, és újra lejátszom, amit a Synapse rögzített.',
+  'A gyilkos szemével látok. Két kéz, ismeretlen, remegés nélküli kéz emelkedik Hegedűs mellkasa felé. Az egyik ujjai között egy csavart rézérme forog.',
+  'A zsebemben a saját érmém hirtelen felmelegszik. Nem akarom megérinteni.'],
+ choices:[
+  {t:'Képkockáról képkockára végignézem.',to:6,fx:{ci:-6,ri:-3},set:['ev_replay']},
+  {t:'A gyilkos arca helyett az áldozat arcába nézek.',to:6,req:{ci:[40]},fx:{ri:-5,par:5},set:['ev_name'],echo:'Hegedűs mosolyog. A szája formálja a szót: Végre, Rex.'},
+  {t:'Visszatekerem az időbélyeget.',to:6,req:{net:[40]},fx:{net:3},set:['ev_timestamp'],echo:'A felvétel nem három napja készült. Harmincegy iteráció óta ugyanaz a másodperc ismétlődik.'}
+ ]});
+
+add(6,{title:'A Fekete Nap',loc:'Synapse · Rétegszint 1 · A falfreskó',aux:true,
+ text:[
+  'A klub hátsó falán, a neonreklámok alatt, egy sötét kör ég, vékony, törött sugarakkal. Fekete Nap. Ez a szignó Ékes Nóráé, az Elhamvadó fény installáció alkotójáé, a médiaművészé, akit kilenc éve halottnak nyilvánítottak.',
+  'Ismertem. Ez az első mondat, amit magamnak ki merek mondani. Egy tetőterasz jut eszembe, eső, Nóra nevetése, a száján a dohány íze. Az emlék tökéletes. Túl tökéletes: minden részlete olyan, mintha egy rendező világította volna be.',
+  'A szignó friss. A festék még nem száradt meg.'],
+ choices:[
+  {t:'Követem a szignó nyomát a mélyebb rétegekbe.',to:8},
+  {t:'Nem lehet. Nóra halott.',to:8,fx:{ri:-5,ci:3},set:['denial']},
+  {t:'Megvizsgálom a saját emlékem: hol van a repedés?',to:8,req:{ri:[55]},fx:{ri:6,ci:-3},set:['ev_flawed'],echo:'Nincs benne eső. A tetőterasz emlékében sehol egy csepp, pedig mindig esett.'},
+  {t:'Kiolvasom a szignó metaadatait: rejtett fájlcsatorna fut alatta.',to:7,req:{net:[45]},fx:{net:2}}
+ ]});
+
+add(7,{title:'Léthé-archívum',loc:'Synapse · Gerinchálózat · Titkosított szektor',
+ text:[
+  'A padló alatt fénylő szerverek sorakoznak, mint egy elsüllyedt város. A hozzáférésem egy pillanatra vörösre vált, majd a rendszer, mintha megkönyörülne rajtam, kinyit egy mappát.',
+  'LÉTHÉ-PROTOKOLL. Alany-0. Kódnév: REX. Iteráció: 31. Állapot: amnéziás, együttműködő, újrahasznosítható.',
+  'A kurzor a nevem fölött villog. Egy fájl, ami rólam szól, és amit nem én írtam.'],
+ choices:[
+  {t:'Letöltöm a teljes archívumot.',to:8,fx:{net:5,par:12},set:['ev_lethe']},
+  {t:'A hozzáférési naplóból közvetlenül a Műtőbe ugrom.',to:12,req:{net:[55]},fx:{par:16,ci:-6},set:['ev_lethe'],echo:'Az utat a Cég elfelejtette lezárni. Vagy valaki szándékosan hagyta nyitva.'},
+  {t:'Nem nyitom ki tovább. Visszamegyek a klubba.',to:3}
+ ]});
+
+add(8,{timer:{sec:25},title:'A Folytonosság Felügyelője',loc:'Synapse · Rétegszint 1 · Szervizfolyosó',aux:true,enter:{fx:{par:6}},
+ text:function(){
+  var t=[
+   'A szignó mögött szervizfolyosó nyílik, fehér LED-csíkokkal. A folyosó végén egy férfi áll fehér öltönyben. Az arca nem arc, hanem folyamatosan újraszámolt megfelelési-grafikon, mintha az emberi vonásokat valaki szabályzatra cserélte volna.',
+   '— Rex. Már megint itt vagyunk — mondja kedvesen, ahogy a halottkém szól az áldozathoz. — A Mnemosyne nevében köszönöm, hogy megint velünk dolgozik. Hozza el nekünk Ékes Nóra Kulcsát, a tudatmintáját, és minden folytatódik. Maga hazamehet. Megint.'];
+  if(st.flags.ev_lethe)t.push('A tekintete lecsúszik a zsebemre, ahová az archívumot töltöttem. Nem szól róla. Ez rosszabb, mintha szólna.');
+  return t},
+ choices:[
+  {t:'Tettetem, hogy elfogadom az ajánlatot.',to:25,fx:{par:-10,ri:-4},set:['deal'],echo:'Rám mosolyog. Az arcgrafikon zöldre vált. Aki zöldre vált, az mindig hazudik.'},
+  {onTimeout:true,t:'Letépem a maszkját.',to:25,req:{ci:[40]},fx:{ci:-10,par:8},set:['defied'],echo:'Az arca széttörik, mint egy elemzés, amit nem engedtek lefutni.'},
+  {t:'Átveszem a felügyelő protokoll gyökérjogát.',to:25,req:{net:[40]},fx:{net:6,par:10},set:['hacked']},
+  {t:'Elfutok a folyosón.',to:25,fx:{par:4}}
+ ]});
+
+add(9,{title:'Ugyanaz az eső',loc:'Synapse · Rétegszint 2 · A folyosó',aux:true,
+ text:function(){
+  var l=st.v.loops;
+  if(l===0)return[
+   'A folyosó végén egy ajtó van. Belépek rajta, és ismét a klub előtt állok, az eső ugyanabban a ritmusban hullik, ugyanaz a szórólap ég a kirakatban. A koordinátám nem változott. A rézérme most is meleg.',
+   'Valami nincs rendben az idővel. A cseppek mintha egy szalagról pörögnének.'].concat(st.flags.knows_real_name?['Valaki a fejemben Dávidnak szólít. A hurok nem ismeri ezt a nevet, és egy pillanatra zavarba jön.']:[]);
+  if(l===1)return[
+   'Újra a folyosó. Újra az ajtó. A szórólapon ugyanaz a hiba: az ötös szám fejjel lefelé nyomtatva. Most már figyelem, és látom: a hurok nem pontos. Van egy varrat, ahol az eső megakad.',
+   'A kezem remeg. A hangom visszhangzik, mielőtt kimondanám.'];
+  if(l===2)return[
+   'Harmadszor. A fejem hasogat, a bordáim alatt idegen emlékek forognak. Egyszer már biztosan itt álltam. Talán sokszor. A rézérme forró, mint egy parázs.',
+   'A varratot most látom tisztán: két másodperc, amikor az eső megáll, és a világ visszatartja a lélegzetét.'];
+  return[
+   'Nem tudom, hányadszor járom végig a folyosót. A zsebemben a rézérme megolvadt, a tenyeremen ég a nyoma. A hurok nem büntetés. Karbantartás. Valaki rendszeresen letörli, amit megtudok.',
+   'Ki kell törnöm. Most.']},
+ choices:[
+  {t:'Végigmegyek a folyosón újra.',to:9,req:{loops:[null,2]},hide:true,inc:{loops:1},fx:{ci:-6}},
+  {t:'Megkeresem a varratot, ahol az eső megakad.',to:10,req:{loops:[1]},fx:{ri:5}},
+  {t:'Megperdítem a rézérmét a varrat pillanatában.',to:10,req:{ri:[50]},fx:{ri:3},echo:'Az érme megáll a levegőben. Az eső is.'},
+  {t:'Megszakítás-parancsot írok az emlék-ciklusba.',to:10,req:{net:[50]},fx:{net:4,par:5}},
+  {t:'Erőszakkal kitörök a hurokból.',to:10,req:{loops:[3]},hide:true,fx:{ci:-18,ri:-4}}
+ ]});
+
+add(10,{title:'A Tükörterem',loc:'Synapse · Rétegszint 3 · Szerviz-átjáró',aux:true,enter:{fx:{ci:-4}},
+ text:[
+  'A varrat túloldalán tükrökkel borított terem nyílik, a plafontól a padlóig. A tükrök nem engem mutatnak. Mindegyikben ugyanaz a jelenet: a színpad, Hegedűs mellkasa, a remegés nélküli kéz, a csavart rézérme.',
+  'Az arc, amely a kézhez tartozik, az enyém.',
+  'A tükrök mögött egy gép rendszeresen megismétli a felvételt, és minden lejátszásnál ugyanazt tanítja nekem: nézd meg, aztán felejts.'],
+ choices:[
+  {t:'Elfogadom: én öltem meg.',to:12,fx:{ri:8,ci:-10},set:['accepted']},
+  {t:'Összetöröm a tükröket.',to:12,fx:{ci:-8,ri:-8},echo:'A szilánkok mind a nevemet suttogják. Egyik sem hazudik.'},
+  {t:'Elemzem a tükrök forrását.',to:12,req:{net:[45]},fx:{net:4,par:6},set:['ev_footage'],echo:'A felvételek a Műtő kamerahálózatából jönnek. A Cég rögzített engem, miközben ölök.'}
+ ]});
+
+add(11,{title:'Vak Mihály',loc:'Synapse · Rain Club · A pult',enter:{set:['met_broker']},
+ text:[
+  'A pult végén egy csonka alak ül, a jobb karja hiányzik, a szeme helyén két lemezt visel. Vak Mihály emlékeket árul: tegnapi nevetést, használt gyászt, olcsó boldogságot, csomagolva.',
+  '— Rex — mondja, mielőtt megszólalnék. — Neked már háromszor adtam el ugyanezt a csomagot. Mindig azt hiszed, most jársz itt először.',
+  'A mosolya nem barátságos. Inkább igazolás.'],
+ choices:[
+  {t:'Hamis hozzáférési kulcsot veszek.',to:3,req:{not:['bought']},hide:true,fx:{net:10,ri:-6},set:['bought']},
+  {t:'Megkérdezem Ékes Nóráról.',to:3,fx:{par:4},set:['ev_broker'],echo:'— A holttestét sosem találták meg. A halálát a Cég jelentette be, nem a rendőrség.'},
+  {t:'Nem veszek semmit.',to:3}
+ ]});
+
+add(12,{timer:{sec:30},title:'A Műtő',loc:'Synapse · Rétegszint 4 · Szigetelt emlék',aux:true,enter:{fx:{ri:-4}},
+ text:[
+  'A tükrök mögött egy fehér műtő nyílik, szagtalan, hangtalan. A kezelőasztalon egy férfi fekszik, a koponyáját lefogják, a halántékába vezetékeket vezetnek. Felismerem a heget a bal szemöldökén. Nálam is ott van.',
+  'Két alak hajol föléje. Az egyik Hegedűs Lőrinc, sima, derűs, egy kicsit kopaszodó. A másik fehér köpenyben áll, a hajában ezüst csík, és a hátát ismerem előbb, mint az arcát. Ékes Nóra él. Vagy élt. Vagy valahol még él.',
+  '— Alany-0 stabil — mondja Hegedűs. — Kezdhetjük a törlést.',
+  '— Ne fájjon neki — válaszolja Nóra, és a hangja elcsuklik. — Ő önként jött.',
+  'Az asztalon fekvő férfi én vagyok. A Mnemosyne első sikeres kísérleti alanya, akit azért írtak át, hogy a Cég legjobb restaurátora legyen. A rézérme, a tetőterasz, a hegem története: építmény. Én magam is memória-építészet vagyok.'],
+ choices:[
+  {t:'Követem a vezetéket a Műtőből a Központi Mag felé.',to:13},
+  {onTimeout:true,t:'Feltöröm a lezárt tárolót. Vissza akarom kapni, amit elvettek.',to:13,req:{ci:[30]},fx:{ci:-12,ri:10},set:['ev_restored'],echo:'A tároló egy mondatot ad vissza: Léthé-2. Négymillió elme átírása. Hegedűs terve. Meg kellett állítani.'}
+ ]});
+
+add(13,{title:'A Fantom',loc:'Synapse · Rétegszint 5 · Hamu-szoba',aux:true,
+ text:function(){
+  var t=[
+   'A vezeték egy lebegő, lassan forgó fekete napba vezet, amelynek sugaraiból hangok szűrődnek. A fény összeáll egy női alakká: Nóra. A körvonalai remegnek, ahogy egy szétszórt tudat próbálja magát tartani.',
+   '— '+(st.flags.knows_real_name?'Dávid':'Rex')+'. Tudtam, hogy megint ideérsz. Harmincegyszer találtál meg, és harmincegyszer írt ki újra a Cég. Ezúttal én hagytam nyitva az ajtót.',
+   '— Hegedűs a Léthé-2-n dolgozott. A Synapse-en át négymillió embert írt volna át egyetlen éjszaka alatt. Te azért öltél, mert megkértelek, nem azért, mert parancsot kaptál. Utána a Cég újraírt téged, hogy megtaláld a gyilkost, vagyis magadat, és kihozd belőlem a Kulcsot.',
+   'A hangja csendes. — A Kulcs én vagyok. Az utolsó példányom. Dönthetsz fölöttem.'];
+  if(st.flags.ev_restored)t.push('Az emlék, amit a tárolóból kinyertem, egyezik a szavaival. Ez a legrosszabb. Nem hazudik.');
+  return t},
+ choices:[
+  {t:'Hiszek neked.',to:14,fx:{ci:6,ri:3},set:['trust_nora']},
+  {t:'Csak egy másolat vagy. Nem hiszek neked.',to:14,fx:{ri:4,ci:-4},set:['doubt_nora']},
+  {t:'Mutasd meg a Kulcsot.',to:14,fx:{net:4,par:4},set:['key_seen']}
+ ]});
+
+add(14,{title:'A Kapu',loc:'Synapse · Rétegszint 6 · Központi Mag, külső gyűrű',aux:true,
+ text:[
+  'A Központi Mag egy óriási fekete gömb, amelyből fénycsatornák indulnak minden elmébe, amely valaha csatlakozott. A gömb előtt a Cég pecsétjével zárt kapu áll. A mögötte lévő gép nem hall, nem érez, csak tárol.',
+  'A kapun át nem lehet visszanézni. Aki belép, azt a rendszer is látja.'],
+ choices:[
+  {t:'Feltöröm a kaput.',to:15,req:{net:[45]},fx:{net:4,par:8}},
+  {t:'Nóra szignója alatt lépek át.',to:15,req:{ri:[40]},fx:{ri:3},echo:'A Fekete Nap kinyitja a kaput. A kapu azt hiszi, még mindig bízunk egymásban.'},
+  {t:'Átrombolom a kaput.',to:15,fx:{ci:-15,par:6}}
+ ]});
+
+add(15,{title:'A Központi Mag',loc:'Synapse · Rétegszint 7 · Kernel',
+ text:function(){
+  var n=evCount();
+  var t=[
+   'A Mag közepén egyetlen konzol áll, rajta négy kar. A rendszer minden elmét felém fordít. Négymillió ember lélegzik egyszerre, és egyikük sem tudja, hogy az én kezemben dől el, mire ébred holnap.',
+   'A rézérme fehéren izzik a zsebemben. Hegedűs holtteste a távolban lebeg, a Cég őrei a folyosó végén gyülekeznek. Egyetlen döntésem van, és ez a legszemélyesebb: ki leszek, amikor kilépek innen.',
+   'Eddig '+n+' bizonyítékot gyűjtöttem a naplómba.'];
+  if(n<4)t.push('A nyilvánosság csak akkor hisz nekem, ha legalább négy bizonyítékot viszek neki.');
+  if(st.flags.deal)t.push('A Felügyelő ajánlata még él. Az arcgrafikon zölden pislákol a folyosó végén.');
+  if(st.flags.ally_lilla)t.push('Lilla hozzáférési kódja a tenyeremen ég. A Mag őrei közül talán senki nem lő rám.');
+  if(st.flags.sacrificed_lilla)t.push('Lilla azonosítója a monitoron vörösen villog. Ezért fizettem: a Kulcs helyéért.');
+  if(st.flags.cop_exposed)t.push('Varga hadnagy hívása a halántékomon vibrál: ő vigyázza a kintet.');
+  var k3=k3count();
+  if(k3>=3)t.push('A zsebemben az M-0001 érme, a fülemben Kárpáti felvétele, a tenyeremen Lilla kódja. A konzol negyedik, eddig sötét mélyedése fényesen izzik.');
+  else if(k3===2)t.push('A konzol negyedik mélyedése halkan izzani kezd. Két kulcs elég hozzá, hogy a rendszer felismerjen.');
+  else if(k3===1)t.push('A konzolon egy negyedik mélyedés sötétlik. Egy kulcs még kevés hozzá.');
+  if(st.flags.purged)t.push('A purgatórium bennem él: a karbantartó hangja nem uralkodik rajtam.');
+  if(st.flags.has_ally)t.push('A halántékomon Pók adóegysége halkan kattog: a jel kész, csak egy mozdulat kell.');
+  if(st.flags.ally_bakos)t.push('Bakos kapszulája a zsebemben meleg. Ha Dávid vissza akar térni, ehhez neki is hozzá kell nyúlnia.');
+  if(st.flags.left_bakos)t.push('Az alagútban eldördült lövés még mindig a fülemben visszhangzik.');
+  if(st.flags.betrayed_bakos)t.push('Bakos szeme a Magban is ott lebeg. Nem vádol. Csak megjegyez.');
+  return t},
+ choices:[
+  {t:'LELEPLEZÉS. Az egész Léthé-archívumot kisugárzom a négymillió elmének.',to:18,req:{ev:[4],ri:[45]},vis:{not:['has_ally']}},
+  {t:'LELEPLEZÉS. Pók offline hálózatán át kisugárzom az archívumot, még ha a Cég levágja a Synapse-t.',to:18,req:{ev:[3],ri:[45]},vis:{has:['has_ally']}},
+  {t:'VISSZAÁLLÍTÁS. Nem törlök, nem veszek át, nem adok át: Dávid akarok lenni.',to:47,req:{ri:[55]},vis:{has:['knows_real_name','ev_restored'],not:['ally_bakos']}},
+  {t:'VISSZAÁLLÍTÁS. A purgatórium után a saját erőmből is visszaadom magamnak a nevemet: Dávid.',to:47,req:{ri:[55]},vis:{has:['knows_real_name','purged'],not:['ev_restored']}},
+  {t:'VISSZAÁLLÍTÁS. Bakos ellenszérumával visszaállítom magam: Dávid akarok lenni.',to:47,req:{ri:[45]},vis:{has:['knows_real_name','ev_restored','ally_bakos']}},
+  {t:'ÁTVÉTEL. Gyökérjogot írok magamnak. A Synapse mostantól az enyém.',to:19,req:{net:[60]},vis:{not:['ally_lilla']}},
+  {t:'ÁTVÉTEL. Lilla hátsó ajtaján át megosztott gyökérjogot írok. Együtt őrizzük a hálózatot.',to:19,req:{net:[50]},vis:{has:['ally_lilla']}},
+  {t:'REJTETT. Nem leleplezem a Céget, és nem veszem át a helyét: visszaírom a saját hurok-kódomat a központi frissítésbe, és a rendszer a saját parancsával lekapcsolja magát.',to:66,req:{net:[50]},vis:{k3:2}},
+  {t:'TÖRLÉS. Mindent törlök, magamat is, Nórát is, és kilépek.',to:20},
+  {t:'ENGEDELMESSÉG. Átadom a Kulcsot a Cégnek.',to:21}
+ ]});
+
+add(16,{title:'Suttogó falak',loc:'Synapse · Észlelési zavar',
+ text:[
+  'A falak elkezdenek beszélni. Nem hangosan: mintha a saját gondolataimat ismételnék, egy kicsit eltolva, egy kicsit rosszabbul. Valaki figyel. Mindig figyelt. A klub minden alakja ugyanazzal az arccal néz rám, a Felügyelő arcával.',
+  'A rézérme égeti a zsebemet. A légzésem szaggatott. El kell döntenem: a suttogás az enyém, vagy tényleg ők beszélnek?'],
+ choices:[
+  {t:'Megperdítem a rézérmét, és tízig számolok.',to:'ret',fx:{ci:10,par:-8}},
+  {t:'Meghallgatom a falakat.',to:'ret',fx:{par:10,ci:-5},set:['ev_whisper'],echo:'A suttogás: Nem a hurok az ellenség. A karbantartó az. A karbantartó a Cég.'},
+  {t:'Hagyom, hogy a mélybe húzzon.',to:56,req:{not:['purged']},hide:true,fx:{ci:-3}}
+ ]});
+
+add(17,{title:'A konyha, amely sosem volt',loc:'Synapse · Valóság-zavar',
+ text:[
+  'A klub eltűnik. Egy konyhában állok, kávé gőzölög, az ablakon át napfény ömlik be. Egy nő háttal áll nekem, mosogat. Egy kisfiú a lábamhoz bújik. — Apa. A szívem a torkomban dobog. Ismerem ezt a konyhát. Sosem jártam itt. Ismerem ezt a gyereket. Sosem volt gyerekem.',
+  'Meleg, biztonságos, és minden részlete hamis. Ez a legvonzóbb csapda, amit elém tehettek.'],
+ choices:[
+  {t:'Maradok még egy percet.',to:'ret',fx:{ri:-12,ci:12}},
+  {t:'Kitépem magam, mielőtt a nő megfordul.',to:'ret',fx:{ci:-10,ri:14},echo:'A nő megfordul, mielőtt kilépek. Nincs arca.'},
+  {t:'A padló alatt valami hív. Lemegyek.',to:56,req:{not:['purged']},hide:true,fx:{ci:-3}}
+ ]});
+
+add(18,{type:'end',tag:'Befejezés',title:'Leleplezés',loc:'A Fekete Nap felkel',
+ text:function(){var t=[
+  'Lehúzom a negyedik kart. A Léthé-archívum kisugárzik négymillió elmébe, egyszerre, hang nélkül: a műtő felvételei, Hegedűs tervei, az Alany-0 száma. A Synapse egyetlen hullámban érti meg, mit tett vele a Cég, mintha a város magához térne.',
+  'A Mnemosyne-torony hologramja még egy óráig ég, aztán megremeg és kihuny. A Dunán a vörös fény helyett csak az eső tükröződik. A részvények zuhannak, a vezetőket letartóztatják, és Varga hadnagy egy fényes irodában ül, ahol a papír végre elég.',
+  'Amikor kinyitom a szemem, a klinikán fekszem, a rézérme a kezemben. Nem tudom, ki vagyok. De az emlékeim most már az enyémek, még ha fájnak is. Nóra utolsó üzenete a halántékomban ég: Köszönöm, hogy emlékeztél.'];
+  if(st.flags.cop_exposed)t.push('Kárpáti nyomozó aznap bemegy a főkapitányságra, és maga mondja el, ki fizette. Varga hadnagy az első, aki a nyilvánosság előtt kimondja: a Mnemosyne nem védte az embereit, hanem birtokolta őket.');
+  return t}});
+
+add(19,{type:'end',tag:'Befejezés',title:'Az Új Építész',loc:'Gyökérjog',
+ text:function(){var t=[
+  'A karok alatt egy ötödik mélyedés nyílik, amelyet eddig nem láttam. A tenyerem beleilleszkedik. A Mag nem ellenáll. Vár. A rendszer úgy hajol meg előttem, ahogy a szolga a gazda előtt, aki ráadásul ugyanaz, mint ő.',
+  'Átírom a gyökérjogokat. Hegedűs hozzáférése megsemmisül, a Léthé-2 leáll, az őrök a folyosó végén dermedten állnak: a protokolljuk már nem a Cégnek engedelmeskedik, hanem nekem.',
+  'A Synapse négymillió elméje csendesen lélegzik, és én vagyok a lélegzet. Nóra hangja a fejemben: — Vigyázz rájuk. A hatalom a legjobb memória-építmény. — Már nem tudom, ki a restaurátor és ki a restaurált. Odakint még mindig esik. Az én esőm.'];
+  if(st.flags.ally_lilla)t.push('Lilla a konzol másik oldalán áll, az ő keze is a gyökérjogon. Ketten tartjuk a hálózatot, és ez az első emlékem, amelyhez nem kellett mást ellopni.');
+  if(st.flags.sacrificed_lilla)t.push('Az őrök között látom Lillát: üres szemmel áll, ahogy egykor én. A rézérme a kezében fényes. Az én hatalmam az ő törlésére épült.');
+  return t}});
+
+add(20,{type:'end',tag:'Befejezés',title:'Léthé',loc:'Teljes törlés',
+ text:[
+  'Nem döntöm el, ki vagyok. Hagyom, hogy a rendszer döntsön helyettem, utoljára. Lehúzom a harmadik kart, a Mag csendben elsötétül, a Fekete Nap sugarai egyenként kialszanak. Nóra utolsóként tűnik el, a tenyeremen nyugtatja az övét, és nem mond semmit.',
+  'A Léthé-protokoll, a gyilkosság felvétele, az iterációk, az összes kudarc: törölve. Magamat is beleértve. Amikor kilépek, valaki egy ismeretlen nevet kiabál utánam a kórház folyosóján. Nem fordulok meg.',
+  'Egy vonaton ébredek, Pest felé. A zsebemben egy csavart rézérme, az ujjam magától forgatja. Nem tudom, honnan van. Nem is akarom tudni. Az eső az ablakon ugyanúgy hull. Az egyetlen dolog, amit biztosan tudok: a döntés az enyém volt.']});
+
+add(21,{type:'end',tag:'Befejezés',title:'A Bábu',loc:'Az iteráció lezárul',
+ text:[
+  'Átnyújtom a Kulcsot. A Felügyelő arca zöldre vált, ezúttal valódi elégedettséggel. — Tudtam, hogy ráhozzuk, Rex — mondja. — Mindig ráhozzuk.',
+  'A Cég visszaír. A Mnemosyne-torony fénye egy pillanatra élesebb lesz. Nóra hangja a fejemben még kiált, aztán elhal, ahogy a víz a lefolyóban.',
+  'Holnap egy irodában ébredek, az ablakom előtt a Duna, és Varga hadnagy bekopog. Egy adatlapot csúsztat az asztalomra. Hegedűs Lőrinc, a Léthé-osztály igazgatója, három napja halott. Nem ismerem meg a saját kezem. A rézérme a zsebemben meleg.']});
+
+add(22,{type:'over',tag:'Hiba',title:'Tudat-összeomlás',loc:'Kognitív Integritás: 0%',
+ text:[
+  'A gondolataim szétesnek, mint a nedves papír. A klub, a tömeg, a fekete nap egyetlen sivító zajba olvad. Valahol messze egy gép kiáltja a nevemet, aztán egy másik, aztán már csak a statikus.',
+  'A klinikán valaki leveszi rólam a restaurátor-hevedert. Az ágyam mellett két ápoló beszél. — Ez is lefutott. Cserélhetjük. A Cég keres egy új restaurátort.']});
+
+add(23,{type:'over',tag:'Hiba',title:'A Felügyelet',loc:'Paranoia: 100',
+ text:[
+  'A Mnemosyne rám talált. A folyosó falai fehérre váltanak, a LED-csíkok egyenként kialszanak, és a Felügyelő arca, ezúttal megfelelési-grafikon nélkül, közelről néz rám.',
+  '— Rex — mondja szelíden. — Sajnáljuk. A szál túl sokat tudott. Újraindítjuk az iterációt. Harminckettedik alkalom. Ébredjen fel, és ne emlékezzen semmire.']});
+
+add(24,{type:'over',tag:'Hiba',title:'Valóság-vesztés',loc:'Valóság-Index: 0',
+ text:[
+  'Már nem tudom, melyik a saját emlékem. A tetőterasz, a konyha, az asszony, aki sosem létezett, a gyerek, aki a nevemen szólít: minden egyformán igaz, és egyformán hamis. Maradok. Maradok, és a hang, amely mindig azt kérdezi, ki vagyok, végre elhallgat.',
+  'Odakint az ápolók a kórlapra jegyzik: restaurátor, nem reagál, a szeme nyitva. Valahol egy konyhában kávé gőzölög.']});
+
+
+/* ---------- Külső város (25-47) ---------- */
+add(25,{title:'Kényszer-kilépés',loc:'Szent Imre-klinika · 4-es kórterem · 02:41',enter:{fx:{ci:-6}},
+ text:[
+  'A Felügyelő arca összeomlik, a folyosó fehér fénybe fordul, aztán a testem visszaránt. A klinika ágyán kapok levegőt, a hevederek a mellkasomra szorulnak. A monitor sípol: a kapcsolatomat valaki kívülről szakította meg.',
+  'Szél Iván az ágyon mellettem kihűlt. A mellkasa nem mozog. Az ápolónő kifutott a folyosóra, és nem jön vissza. A Synapse-tüske a halántékán elnémult: aki a fiú fejében lakott, elment, vagy elvitték.',
+  'Van egy órám. Pontosabban: a Cég adott egy órát. Ennyi idő alatt zárják le az ügyet, vagy engem.'],
+ choices:[
+  {t:'Letépem a hevedert, és kimegyek a folyosóra.',to:26},
+  {t:'Előbb visszanézem a monitor naplóját.',to:26,req:{net:[45]},fx:{net:3},echo:'A kapcsolatot a Mnemosyne-torony szakította meg. A parancs kódja a Felügyelő aláírását viseli.'}
+ ]});
+
+add(26,{title:'Varga a folyosón',loc:'Szent Imre-klinika · Folyosó · 02:49',
+ text:[
+  'Varga hadnagy a falnak dőlve áll, a kabátja még mindig csöpög. Nem néz rám, a plafon neoncsövét bámulja.',
+  '— Hegedűs lakását a rendőrség elől is lezárták, de a pecsétet valaki már feltörte. A Duna-parti piacon valaki tud arról, mit árult a halott a Cégnek. És van egy volt idegtudós a Ferencvárosban, aki még emlékszik rád. Rád, nem a Rexre. Nekem nem szóltak erről, Rex. Szóval nem mondhatom, hogy tudok róla.',
+  'Nem kérdezem, miért segít. Az emlék-restaurátorok nem kérdeznek, és a rendőrök sem mondanak igazat. De ma éjjel mintha mégis.'],
+ choices:[
+  {t:'Köszönöm. Elindulok.',to:27},
+  {t:'Mit tudsz te Ékes Nóráról?',to:27,fx:{ri:3,par:4},echo:'— Semmit — mondja, túl gyorsan.'}
+ ]});
+
+add(27,{title:'Új-Budapest',loc:'Pesti oldal · Eső · 03:10',
+ text:function(){
+  var n=(st.flags.v_flat?1:0)+(st.flags.v_market?1:0)+(st.flags.v_bakos?1:0)+(st.flags.v_tower?1:0)+(st.flags.v_cop?1:0);
+  var t=['A klinika kapuján kilépve az eső belém kap. Az utca szagát nem a Synapse hamisítja: olaj, nedves beton, valahol sült tészta. Öt nyom vár a városban, egy órám van, vagy talán kevesebb.'];
+  if(n>0)t.push('Bejárt helyszín: '+n+' az ötből. A zsebemben a nehezebb igazság zörög.');
+  if(n===5)t.push('Több nyomot nem találok. A Cég egy órája lejár. Vissza kell mennem.');
+  return t},
+ choices:[
+  {t:'Elmegyek Hegedűs lakására a Vízivárosba.',to:28,req:{not:['v_flat']},hide:true},
+  {t:'Lemegyek a Duna-parti feketepiacra.',to:34,req:{not:['v_market']},hide:true},
+  {t:'Felkeresem a volt idegtudóst a ferencvárosi gyógyszertárban.',to:40,req:{not:['v_bakos']},hide:true},
+  {t:'Felmegyek a Mnemosyne-torony restaurátor-részlegére.',to:48,req:{not:['v_tower']},hide:true},
+  {t:'Kárpáti nyomozó üzent: találkozó a Margit-híd kávézójában.',to:52,req:{not:['v_cop']},hide:true},
+  {t:'Visszamegyek a klinikára, és újra csatlakozom.',to:46}
+ ]});
+
+add(28,{title:'A Víziváros árnyékában',loc:'Víziváros · Margit körút mellett · 03:25',
+ text:[
+  'Hegedűs lakása egy századfordulós bérház legfelső szintjén van, ahol a stukkók alatt újabb és újabb hálózati kábelek futnak. A lépcsőház lámpája pislákol. A rendőrségi pecsét fel van törve. Nem a rendőrség törte fel.'],
+ choices:[
+  {t:'Belépek.',to:29},
+  {t:'Átnézem a lépcsőház kameráit.',to:29,req:{net:[40]},fx:{net:2},echo:'A kamerák tegnap este tizenegy és éjfél között megszakadtak. Utána valaki letörölte a naplót.'}
+ ]});
+
+add(29,{title:'Kifosztott dolgozószoba',loc:'Víziváros · Hegedűs lakása',
+ text:[
+  'A szobában minden a helyén van, csak a polcokról tűnt el valami: poros négyszögek jelzik, ahol dobozok álltak. Az asztalon kalitka, benne élő kismadár, amelyet valaki napi rendszerességgel etet. Hegedűs egy halott ember szokásaival él tovább.',
+  'A falon beépített széf, szokásos Mnemosyne-gyártmány. Két érintésérzékelő, egy kódlap.'],
+ choices:[
+  {t:'Megpróbálom a széfet.',to:30},
+  {t:'Átkutatom az asztalt.',to:31,fx:{ri:2}}
+ ]});
+
+add(30,{title:'A széf',loc:'Víziváros · Hegedűs lakása',
+ text:[
+  'A kódlap hideg, és a számok kopottak: valaki sokszor nyitotta ezt az ajtót, mindig ugyanabban a sorrendben. A széf mögött nem pénz lehet. A Cég igazgatója nem pénzt rejteget.'],
+ choices:[
+  {t:'Feltöröm a kódlapot.',to:31,req:{net:[45]},fx:{net:3,par:4},set:['ev_disk'],echo:'A kódlap sípol, és kinyílik. Egy fizikai adatkocka áll a polcon, kézírásos címkével: Fekete Nap, 3. példány.'},
+  {t:'A kód az emlékeimben van: Nóra születésnapja.',to:31,req:{ri:[50]},fx:{ri:3},set:['ev_disk'],echo:'A kód a tetőterasz éjszakájának dátuma. Nem tudom, honnan tudom. A széfben egy adatkocka áll.'},
+  {t:'Szétfeszítem a széfet.',to:31,fx:{ci:-8,par:5},set:['ev_disk'],echo:'A fém sikít, a tenyerem vérzik. Bent egy adatkocka áll, a címkén: Fekete Nap, 3. példány.'}
+ ]});
+
+add(31,{title:'Zsófia néni',loc:'Víziváros · Lépcsőház',
+ text:[
+  'A lakás ajtajában egy idős asszony áll, kezében csésze, a másik kezében a kismadár tápja. Hegedűs házvezetőnője, harminc éve a házban él. Nem lepődik meg rajtam: úgy néz, mintha vártak volna.',
+  '— Hetente jött egy fiatal nő — mondja. — Ezüst csíkos haj. Azt mondta, a lánya, de nem volt a lánya. Ugyanazt az arcot viselte, mint a lány, aki a falon lóg, de a szeme nem pislogott. Mindig a madarat nézte. Az éjjel is itt volt. Sírt.'],
+ choices:[
+  {t:'Megköszönöm, és indulok.',to:32,fx:{ri:4},set:['ev_witness']},
+  {t:'Elmondta ezt a rendőrségnek?',to:32,fx:{par:3},set:['ev_witness'],echo:'— Elmondtam. Az egyenruhás fiatalember jegyzetelt, aztán kicserélték.'}
+ ]});
+
+add(32,{timer:{sec:20},title:'Ügynökök a lépcsőházban',loc:'Víziváros · Kapualj · 04:02',
+ text:[
+  'A kapuban két fehér ruhás alak áll, a nyakukon a Mnemosyne vezetékes nyaklánca. Megállnak, és szinkronban fordulnak felém. Az eső hangja ugyanaz marad, de a lélegzetük egyszerre.'],
+ choices:[
+  {onTimeout:true,t:'Visszafordulok, és a háztetőkön át menekülök.',to:33,fx:{ci:-4,par:6},set:['tailed']},
+  {t:'Szemből megyek át rajtuk, mintha nem érdekelnének.',to:33,req:{ci:[50]},fx:{ri:2,par:8}},
+  {t:'Kikapcsolom a nyakláncaik rádiókapcsolatát.',to:33,req:{net:[50]},fx:{net:3,par:2}}
+ ]});
+
+add(33,{title:'Háztetők',loc:'Víziváros · Háztetők · 04:20',
+ text:[
+  'A háztetők csúszósak, és minden kémény alatt egy-egy lakás meleg fénye. Valahol lent megáll egy autó. Elérem az utolsó tetőt, és a tűzlépcsőn lemegyek a Duna felé. A zsebemben az adatkocka súlya nő, ahogy távolodom.'],
+ choices:[
+  {t:'Lemegyek a tűzlépcsőn.',to:27,set:['v_flat']}
+ ]});
+
+add(34,{title:'A rakpart',loc:'Duna-part · Alsó rakpart · Feketepiac',
+ text:[
+  'Az alsó rakparton az éjszakai piac hajnalig él. Emlékcsomagok, lopott implantátumok, hamis hozzáférések. A hűtőkocsik motorja nyugtalan ritmust ad a beszélgetéseknek, és az eső a víz fölött lila fényekben úszik.'],
+ choices:[
+  {t:'Megkeresem Vak Mihály testvérét.',to:35},
+  {t:'Körbehallgatom a piacot.',to:35,req:{net:[40]},fx:{net:2,par:2},echo:'Három standról is ugyanazt a nevet suttogják: Pók.'}
+ ]});
+
+add(35,{title:'Béla',loc:'Duna-part · Rozsdás konténer',
+ text:[
+  'Vak Mihály testvére, Béla, egy rozsdás konténer lépcsőjén ül, kétkezes és kétszemű, de ugyanazzal a mosollyal. — A bátyám a Synapse-ben tengődik, ez itt az eladóoldal — mondja. — Ismerted Ékes Nórát?',
+  'A Kulcsot a Cég keresi. Aki ismeri, az nem alszik jól.'],
+ choices:[
+  {t:'Kérdezem a Kulcsról.',to:36,fx:{par:3,ri:2}},
+  {t:'Megmutatom az adatkockát.',to:36,req:{has:['ev_disk']},hide:true,fx:{net:2},echo:'Béla felhúzza a szemöldökét. — Ezt Pók tudja olvasni. Ha szóba áll veled.'}
+ ]});
+
+add(36,{title:'Pók',loc:'Duna-part · Hűtőkonténer',
+ text:[
+  'Pók fiatal nő, a haja félig leborotvált, a szeme alatt tetovált áramkör. A hálózat egyik legjobb hackere, a Cég már kétszer is megpróbálta rárontani a rendőrséget. A konténerében forró levegő és hűtőfolyadék szaga van.',
+  '— Rex — mondja ismerősen. — Már megint kérdezni jössz?'],
+ choices:[
+  {t:'Megmutatom neki az adatkockát.',to:37,req:{has:['ev_disk']},hide:true},
+  {t:'Segítséget kérek.',to:37}
+ ]});
+
+add(37,{title:'Az alku',loc:'Duna-part · Hűtőkonténer',
+ text:[
+  'Pók az asztalra tolja a kávéját, és csak ezután szól. — Egy óra és egy szívesség. A szívesség lehet bizalom, lehet fizetség, lehet egy olyan emlékcsomag, amiről a Cég nem tud.'],
+ choices:[
+  {t:'Megbízom benned. Dolgozzunk együtt.',to:38,fx:{ri:3,par:3},set:['has_ally']},
+  {t:'Fizetek az implantátumom egy részéből.',to:38,req:{net:[50]},fx:{net:-8},echo:'A számlán csökken a hozzáférésem. A hacker nem kér többet.'},
+  {t:'Elveszem az eszközét, és elmegyek.',to:38,req:{ci:[40]},fx:{par:10,ci:-4},echo:'Pók a szemembe néz, és nem mozdul. Az ellenség nem az, aki elvesz. Az, aki megjegyez.'}
+ ]});
+
+add(38,{title:'Dekódolás',loc:'Duna-part · Hűtőkonténer',
+ text:function(){
+  if(st.flags.ev_disk)return[
+   'Az adatkocka rácsos fényben kel életre. A tartalma két rétegű: a Léthé-archívum nyilvános verziója, és egy hangfájl, a hossza kilenc perc. Nóra hangja, kilenc éves, rekedt a dohánytól.',
+   'Pók leveszi a fejhallgatót, és nem néz rám. — Ezt neked küldték. Neked, nem a világnak.'];
+  return[
+   'Az adatkocka nélkül Pók csak fél választ tud adni. A Fekete Nap-protokoll, mondja, a Mnemosyne régi kísérleti neve. A Cég minden példányát felkutatja, és az, aki ma ide jött kérdezni, holnap már nem emlékszik.'
+  ]},
+ choices:[
+  {t:'Meghallgatom a hangfájlt.',to:39,req:{has:['ev_disk']},hide:true,fx:{ci:-3,ri:3}},
+  {t:'Megkérdezem, ki őrzi a Fekete Nap-példányokat.',to:39,req:{not:['ev_disk']},hide:true,fx:{ri:2}}
+ ]});
+
+add(39,{title:'Üldözés a rakparton',loc:'Duna-part · Alsó rakpart · 05:05',
+ text:[
+  'Fent a rakpart fényei elalszanak, az éjszakai piac egyszerre csendesedik el. Fehér autók gördülnek le a rámpán. Pók a fülembe súgja: — Hátul van egy kishajó.'],
+ choices:[
+  {t:'Kishajón át menekülök.',to:27,fx:{ci:-3,par:4},set:['v_market']},
+  {t:'Pók elterelő hálóblokkja: nekik megyünk.',to:27,req:{has:['has_ally']},hide:true,fx:{par:-6},set:['v_market']}
+ ]});
+
+add(40,{title:'A gyógyszertár pincéje',loc:'Ferencváros · Nonstop gyógyszertár · Alagsor',
+ text:[
+  'A nonstop gyógyszertár alagsorában egy öreg férfi alszik egy pótágyon, körülötte monitorok, szétszedett implantátumok, kézzel rajzolt agytérképek. Bakos Ernő idegtudós volt, a Léthé-osztály alapító tagja. Kilenc éve eltűnt a Cég adatbázisából. Én találtam meg.'],
+ choices:[
+  {t:'Felébresztem.',to:41},
+  {t:'Megvárom, amíg felébred.',to:41,fx:{ri:1}}
+ ]});
+
+add(41,{title:'Bakos',loc:'Ferencváros · Alagsor',
+ text:[
+  'Bakos hosszan néz rám, aztán sírni kezd. — Te vagy az — mondja. — Mindig te vagy. Hányadszor? Ötödször? Tizedszer?',
+  'Harmincegyedszer, gondolom, de nem mondom ki. A szám ott ég a nyelvem alatt.'],
+ choices:[
+  {t:'Mondd el, ki vagyok.',to:42},
+  {t:'Előbb azt mondd meg, mit csináltatok velem.',to:42,fx:{ri:2,ci:-3}}
+ ]});
+
+add(42,{title:'A név',loc:'Ferencváros · Alagsor',enter:{fx:{ri:8,ci:-6},set:['knows_real_name']},
+ text:[
+  '— Kerényi Dávid — mondja Bakos. — A tied a név. A Rex a Cég fedőneve rólad. Kerényi Dávid, tizenhat éve a Műcsarnok restaurátora, Ékes Nóra társa, a Fekete Nap-kiállítás társszervezője.',
+  'A név a szájában súlyosabb, mint bármelyik emlék. Kimondom magamban. Nem nyugtat meg, de igaznak hangzik.'],
+ choices:[
+  {t:'Ismételd meg még egyszer.',to:43},
+  {t:'Elég. Mit akart Nóra?',to:43}
+ ]});
+
+add(43,{title:'Az önkéntes',loc:'Ferencváros · Alagsor',enter:{fx:{ri:5}},
+ text:[
+  '— Önként jelentkeztél — mondja Bakos. — Nóra azt hitte, ha beengednek a fejedbe, belülről fel tudjátok robbantani a Léthé-programot. Az első két iterációt elrontottuk, mert a Cég azt hitte, hogy te vagy az áldozat. A harmadiktól te használtad a Cég módszerét a Cég ellen.'],
+ choices:[
+  {t:'Mit nem mondtál még el?',to:44},
+  {t:'Mit kérsz cserébe?',to:44}
+ ]});
+
+add(44,{timer:{sec:25},title:'A dilemma',loc:'Ferencváros · Alagsor',
+ text:[
+  'A pincében megnyikordul egy lépcső. Fent fehér lábak. Bakos felkapja a fejét. — Már itt vannak. Tudtam, hogy megfigyelnek. — Remegő kézzel egy kapszulát vesz elő. — Ez az utolsó stabil mintám a Léthé-ellenszérumból. Ha elviszed, mehetsz. Én maradok. Vagy elviszel mindkettőnket.'],
+ choices:[
+  {t:'Kiviszem innen. Együtt megyünk.',to:45,fx:{par:10,ci:-4},set:['ally_bakos']},
+  {t:'Te is a Léthé része voltál. Itt hagylak.',to:45,fx:{ri:-3},set:['left_bakos']},
+  {onTimeout:true,t:'A Cégnek adom. Ha tisztázom magam, talán túlélem.',to:45,fx:{par:-12,ri:-6},set:['betrayed_bakos'],echo:'Az ügynökök leveszik a fejhallgatót. Bakos rám néz. A szeme nem vádol. Csak megjegyez.'}
+ ]});
+
+add(45,{title:'Menekülés a mélyből',loc:'Ferencváros · Csőalagút',
+ text:function(){
+  if(st.flags.ally_bakos)return['A pince hátsó ajtaján, egy régi csőalagúton menekülünk. Bakos zihálva követ, a kapszulát szorongatja a mellkasán. A Duna felől füstszag érkezik, és valahol mögöttünk megsüketül a világ.'];
+  if(st.flags.betrayed_bakos)return['Az utcára lépek, és Bakos kiáltása a lépcsőházból még követ egy darabig. Aztán a hang elhalkul, mint a Synapse-ben a kórus. Nem fordulok vissza.'];
+  return['Egyedül lépek ki az alagúton. Mögöttem csend, aztán egy lövés. Nem fordulok meg. A rézérme a zsebemben ehhez az emlékhez sem lesz horgony.']},
+ choices:[
+  {t:'Kijutok a felszínre.',to:27,set:['v_bakos']}
+ ]});
+
+add(46,{title:'Visszacsatlakozás',loc:'Szent Imre-klinika · 4-es kórterem · 05:40',
+ text:function(){
+  var t=['A klinikára hajnalban érek vissza. A folyosón két fehér öltönyös áll, de a kórtermet nem zárták le. Szél Iván testét elvitték, az ágy üres, a heveder a helyén. A Cég azt hiszi, még mindig dolgozom nekik.'];
+  if(st.flags.tailed)t.push('Az utcán követtek, de a liftnél lemaradtak.');
+  if(st.flags.has_ally)t.push('A halántékomon Pók apró adóegysége. Ha a Synapse-ben bajba kerülök, megkapja a jelet.');
+  if(st.flags.knows_real_name)t.push('A nevemet suttogom a heveder fölött. Dávid. Nem fáj úgy, mint hittem.');
+  return t},
+ choices:[
+  {t:'Csatlakozom.',to:9},
+  {t:'Megperdítem a rézérmét: Dávid vagyok.',to:9,req:{ri:[50]},vis:{has:['knows_real_name']},fx:{ri:3}}
+ ]});
+
+add(47,{type:'end',tag:'Befejezés',title:'Dávid',loc:'Visszaállítás',
+ text:[
+  'A negyedik kar mellett van egy ötödik mélyedés, amelyet Nóra hagyott nekem. A tenyerem helyett a rézérmét teszem bele. Nem az enyém: Nóra csinálta, kilenc éve, a tetőteraszon, a nap alatt, amikor még Dávid voltam.',
+  'A Mag nem töröl és nem ír át: visszaad. A Rex-iterációk harmincegy rétege lehámlik rólam, a Léthé-protokoll leáll, a Fekete Nap lassan Nóra arcává áll össze, és utoljára megérinti az arcomat. — Megint a nevedet viselheted — mondja. — A többi a te dolgod.',
+  'A klinikán ébredek. A hevedert egyedül oldom le. A folyosón Varga hadnagy vár, kezében egy adatlap, és kimondja a nevemet, amit kilenc éve senki. Odakint esik, de az eső először nem a csatornába, hanem a Dunába hull. Dávid vagyok. Maradnak hegek. De az enyémek.']});
+
+
+/* ---------- Kollaboránsok (48-56) ---------- */
+add(48,{title:'A Mnemosyne-torony előcsarnoka',loc:'Pest · Mnemosyne-torony · Földszint · 06:15',
+ text:[
+  'A torony előcsarnoka katedrális. Fehér márvány, a mennyezeten a Cég emblémája forog, mint egy lassú, hideg nap. Az alkalmazottak ugyanabban a lépésben járnak, mintha egy karmester vezényelné őket.',
+  'A restaurátor-részleg a tizennegyedik emeleten van, és ma éjjel valaki ott dolgozik. Valaki, akit nem ismerek, de akinek ismernem kellene.'],
+ choices:[
+  {t:'Belépek a főbejáraton, mintha a Cég embere volnék.',to:49,vis:{has:['deal']},fx:{par:-2},echo:'A portás biccent. Az ajánlat még él: a Cég azt hiszi, nekik dolgozom.'},
+  {t:'Belépek a főbejáraton, mintha a Cég embere volnék.',to:49,vis:{not:['deal']},fx:{par:8},echo:'A portás hosszan néz rám. Az ujja a gombon marad, de nem nyomja meg.'},
+  {t:'Vak Mihály hamis kulcsával lépek be.',to:49,req:{net:[45]},fx:{par:2}},
+  {t:'Megvárom, amíg valaki kijön, és beslisszolok.',to:49,fx:{ri:1,par:3}}
+ ]});
+
+add(49,{title:'Lilla',loc:'Mnemosyne-torony · 14. emelet · Restaurátor-részleg',
+ text:[
+  'A tizennegyedik emeleten egy fiatal nő ül restaurátor-hevederben, szemben egy üres székkel. Huszonkét éves, rövid fekete haj, a bal szemöldökén friss heg. A kezében egy csavart rézérme, ugyanolyan, mint az enyém, csak fényesebb.',
+  '— Rex? — kérdezi, és a hangjában tisztelet van, mintha egy fotóról ismerne. — Mondták, hogy te leszel a mentorom. Azt is mondták, hogy ne vegyelek komolyan, mert a tiszteletlenség kiszámíthatatlan.'],
+ choices:[
+  {t:'Megkérdezem, mióta dolgozik itt.',to:50},
+  {t:'Megnézem a hevedere naplóját.',to:50,req:{ri:[50]},fx:{ri:2}}
+ ]});
+
+add(50,{title:'Alany-1',loc:'Mnemosyne-torony · 14. emelet · A monitor mögött',enter:{fx:{ri:3},set:['ev_alany1']},
+ text:[
+  'Lilla ütemterve a monitoron: harmadik iteráció, négy nap múlva törlés, aztán beültetés. Az üzenet ugyanaz, mint az enyémben volt: önkéntes, stabil, újrahasznosítható.',
+  'Lilla nem tudja. Vagy tudja, és nem mer kérdezni. A rézérme a kezében remeg. Az enyém a zsebemben kihűl.'],
+ choices:[
+  {t:'Elmondom neki az igazat.',to:51,fx:{par:8,ri:2},set:['ally_lilla']},
+  {t:'Hallgatok, és az ő hozzáférésével lekérdezem a Kulcs helyét.',to:51,fx:{net:8,ci:-6,par:-4},set:['sacrificed_lilla']},
+  {t:'Elmegyek. Nem az én háborúm.',to:51,fx:{par:-2},set:['left_lilla']}
+ ]});
+
+add(51,{title:'A következmény',loc:'Mnemosyne-torony · Lift',
+ text:function(){
+  if(st.flags.ally_lilla)return[
+   'Lilla elsápad, aztán lassan bólint. — Éreztem — mondja. — Valahányszor a rézérmét nézem, azt hiszem, nem az enyém.',
+   'Kiad nekem egy belső hozzáférési kódot: az őrök protokolljának hátsó ajtaját. — Ha a Magban vagy, használd. Én addig eltűnök a Cég radarjáról.'];
+  if(st.flags.sacrificed_lilla)return[
+   'Lekérdezem a Kulcs helyét, és Lilla azonosítója mellett felvillan a törlési ütemterv. Négy nap helyett holnap. A monitor mintha rám nézne.',
+   '— Köszönöm — mondja Lilla, és nem tudja, miért. A rézérme a kezében fényesebben ragyog, mint valaha.'];
+  return[
+   'Kimegyek a liftbe. Lilla utánam szól: — Rex? Valami baj van? Nem fordulok vissza. A lift ajtaja becsukódik az arca előtt, és egy pillanatig a saját arcomat látom benne, huszonkét évesen.']},
+ choices:[
+  {t:'Kilépek a toronyból.',to:27,set:['v_tower']}
+ ]});
+
+add(52,{title:'A Margit-híd kávézója',loc:'Margit-híd · Pesti hídfő · Nonstop kávézó · 06:40',
+ text:[
+  'Kárpáti Gábor nyomozó, Varga régi partnere. Nagydarab férfi, rosszul szabott öltönyben, a kávéja mellett gyűrött cigarettásdoboz. A Mnemosyne-ügy kezdete óta kerül minket, most ő hívott.',
+  '— Rex — mondja, és nem áll fel. — Tudok valamit a Hegedűs-ügyről, amit Varga nem. Ülj le.'],
+ choices:[
+  {t:'Leülök.',to:54},
+  {t:'Átnézem a telefonját a nyaklánc-lehallgatómon.',to:53,req:{net:[45]},fx:{net:2,par:3},echo:'A telefon forgalma a Mnemosyne szervereire fut. Minden este tízkor.'}
+ ]});
+
+add(53,{title:'Kárpáti ajánlata',loc:'Margit-híd · Kávézó',
+ text:[
+  '— Hegedűst nem a Cég ölte meg — mondja. — Hanem te. Tudom, hogy te voltál. A Cég megvédett, mert hasznos vagy. Én is megvédelek, ha kiviszed innen a Kulcsot, és nekem adod.',
+  'Közelebb hajol. A tekintete a vállam fölött a bejáratot méri. — Van egy zsebem, ami a Cégnél is nagyobb.'],
+ choices:[
+  {t:'Látom, hogy fizet a Cég. Ki a megrendelőd?',to:54,fx:{ri:3,par:3}},
+  {t:'Elfogadom az ajánlatot.',to:54,fx:{ri:-2}},
+  {t:'A zsebébe nyúlok: hangrögzítő.',to:54,req:{ci:[40]},fx:{net:2},echo:'A hangrögzítő még fut. Minden szavunkat a Cég hallgatja.'}
+ ]});
+
+add(54,{timer:{sec:20},title:'A csapda',loc:'Margit-híd · Kávézó · 06:58',
+ text:[
+  'Kárpáti kávéskanala csörög a csészében. Odakint fehér autók gördülnek a híd lábához. — Sajnálom — mormolja, és tényleg sajnálja. A szemében ugyanaz a kimerültség, ami Vargáéban is megvan, csak neki van mire költenie a bűntudatát.'],
+ choices:[
+  {t:'Szembeszállok vele: a felvételt Vargának adom.',to:55,fx:{par:6,ci:-4},set:['cop_exposed','ev_cop']},
+  {t:'Zsarolom: a felvételt megtartom, és ő szerez nekem hozzáférést.',to:55,fx:{net:8,par:4},set:['cop_leash','ev_cop']},
+  {onTimeout:true,t:'Elmenekülök, és hagyom, hogy a Cég elintézze.',to:55,fx:{par:8,ci:-3},set:['cop_fled']}
+ ]});
+
+add(55,{title:'A híd alatt',loc:'Margit-híd · Rakpart',
+ text:function(){
+  if(st.flags.cop_exposed)return['A felvételt a postaládájába ejtem. Varga hívása még aznap reggel megérkezik, rövid és fáradt: — Köszönöm. Tudtam, hogy valaki közülünk. Reméltem, hogy nem ő.'];
+  if(st.flags.cop_leash)return['Kárpáti sápadt, de nem vitatkozik. A tenyerembe csúsztat egy hozzáférési kártyát, és a szeme nem találkozik az enyémmel. A zsarolás nem büntet. Csak lekötelez, mindkettőnket.'];
+  return['A híd alatt az eső erősebb. Mögöttem hallom a lépcsőház ajtajának csapódását, aztán egy nehéz test zuhanását. Nem fordulok vissza. A rézérme a zsebemben hideg.']},
+ choices:[
+  {t:'Továbbmegyek.',to:27,set:['v_cop']}
+ ]});
+
+
+/* ---------- Belső purgatórium (56-65) ---------- */
+add(56,{title:'Lefelé',loc:'Belső purgatórium · 1. szint',
+ text:[
+  'A padló szó nélkül megnyílik alattam. Nem zuhanok: lépcsőn ereszkedem, amelynek minden foka egy elfelejtett nap. A korlát nyirkos, és a szagából felismerem: a klinika.',
+  'Aztán a lépcső véget ér, a falak fehérek lesznek. Valahol egy gép egyenletesen tűz: Rex. Rex. Rex.'],
+ choices:[
+  {t:'Lemegyek a lépcsőn.',to:57},
+  {t:'Visszafordulok, amíg még lehet.',to:'ret',fx:{par:2}}
+ ]});
+
+add(57,{title:'A kórterem',loc:'Belső purgatórium · Fehér szoba',
+ text:[
+  'Fehér szoba. Fehér lepedő. A mellkasomon heveder, a szám száraz. Egy orvos ül az ágyam szélén, kedvesen, fáradtan. A névtábláján: dr. Fehér.',
+  '— Uram — mondja. — Kilenc éve él a kórházban. A Synapse, Nóra, a Mnemosyne, a rézérme: mind a betegség része. Ma beszélt velem először értelmesen. Nem akarja ezt elhinni? Olyan sokat szenvedett.'],
+ choices:[
+  {t:'Elhiszem az orvost. Elég volt.',to:58,fx:{ri:-8,ci:8}},
+  {t:'Megkérdezem, mi van a rézérmém élén.',to:59,req:{ri:[40]},fx:{ri:4,ci:-2},set:['ev_serial'],echo:'Az orvos pislog. — Nem tudom, maga hozta be. — Az érme élén sorozatszám áll: M-0001. A Cég mintadarabja.'},
+  {t:'Nem hiszem el.',to:59,fx:{ci:-4}}
+ ]});
+
+add(58,{title:'A csendes kert',loc:'Belső purgatórium · Tetőkert',
+ text:[
+  'A kert a kórház tetején van, napsütésben. Egy pad, egy fa, kávé gőzölög. Nóra ül mellettem, ősz hajjal, és nevet. Nincs eső. Itt nincs eső.',
+  '— Maradhatsz — mondja. — Itt nem kell tudnod semmit.'],
+ choices:[
+  {t:'Maradok még egy kicsit.',to:58,req:{calm:[null,1]},hide:true,inc:{calm:1},fx:{ci:6,ri:-5}},
+  {t:'Felállok, és kimegyek a kapun.',to:59}
+ ]});
+
+add(59,{title:'A folyosó',loc:'Belső purgatórium · Három ajtó',
+ text:function(){
+  var n=(st.flags.pg_roof?1:0)+(st.flags.pg_table?1:0)+(st.flags.pg_hands?1:0);
+  var t=['A kert kapuja egy hosszú folyosóra nyílik. Három ajtó áll rajta, mindegyiken az én kézírásom: Tető. Asztal. Kéz.','— Egyik sem zárt — mondja a hang a falakból. — De mind fáj.'];
+  if(n>0)t.push('Már végigjártam: '+n+' a háromból.');
+  if(n===3)t.push('A folyosó végén világosság dereng. A hang ott vár.');
+  return t},
+ choices:[
+  {t:'A Tető ajtaja.',to:60,req:{not:['pg_roof']},hide:true},
+  {t:'Az Asztal ajtaja.',to:61,req:{not:['pg_table']},hide:true},
+  {t:'A Kéz ajtaja.',to:62,req:{not:['pg_hands']},hide:true},
+  {t:'Visszamegyek a kertbe, még egy percre.',to:58,req:{calm:[null,1]},hide:true},
+  {t:'Továbbmegyek a hang felé.',to:63,vis:{has:['pg_roof','pg_table','pg_hands']}}
+ ]});
+
+add(60,{title:'Tető',loc:'Belső purgatórium · Az első ajtó',
+ text:[
+  'A tetőterasz. Eső. Nóra nevet, a szájában a dohány íze. Az emlék ugyanúgy játszódik le, ahogy a fejemben őriztem: tökéletesen, túl tökéletesen. A reflektorfény minden mozdulatot kiemel, mintha valaki betanította volna őket.',
+  'Egy ponton Nóra rám néz, és mintha nem ismerne.'],
+ choices:[
+  {t:'Megtöröm az emléket: ez hamis.',to:59,fx:{ri:8,ci:-5},set:['pg_roof']},
+  {t:'Végignézem, amíg kell.',to:59,fx:{ci:-2,ri:3},set:['pg_roof']}
+ ]});
+
+add(61,{title:'Asztal',loc:'Belső purgatórium · A második ajtó',
+ text:[
+  'A műtőasztal hideg. A hevederek a csuklómba vágnak. Fölöttem Hegedűs arca derűsen lebeg. — Kezdhetjük a törlést — mondja, és mögötte Nóra tehetetlenül fordul el.',
+  'A saját hangomat hallom: — Csinálják. Csinálják meg.'],
+ choices:[
+  {t:'Elfogadom, hogy önként feküdtem ide.',to:59,fx:{ri:8,ci:-3},set:['pg_table']},
+  {t:'Üvöltök, és küzdök a hevederek ellen.',to:59,fx:{ci:-5,ri:2},set:['pg_table']},
+  {t:'Átírom a jelenetet a saját kezemmel.',to:59,req:{net:[45]},fx:{net:3,ri:4,ci:-2},set:['pg_table']}
+ ]});
+
+add(62,{title:'Kéz',loc:'Belső purgatórium · A harmadik ajtó',
+ text:[
+  'A színpad, a klub, a csavart rézérme az ujjaim között. A kezem, a remegés nélküli kezem, Hegedűs mellkasa felé nyúl. Most érzem, ami a felvételből hiányzott: a súlyt. Nem düh volt. Nem bosszú. Nehéz, csendes kötelesség.',
+  'Hegedűs mosolyog. — Végre, Rex.'],
+ choices:[
+  {t:'Megbocsátok magamnak.',to:59,fx:{ci:6,ri:3},set:['pg_hands']},
+  {t:'Nem bocsátok meg. Viselem.',to:59,fx:{ci:-4,ri:6},set:['pg_hands']}
+ ]});
+
+add(63,{timer:{sec:30},title:'A hang',loc:'Belső purgatórium · A folyosó vége',
+ text:[
+  'A folyosó végén nincs ajtó, csak egy hang, amely az én hangom, csak halkabb, hivatalosabb.',
+  '— Karbantartó vagyok — mondja. — Én tartottalak itt kilenc éve. Lemostam, amit megtudtál, hogy ne fájjon. Hagyj itt maradni. Biztonságban vagy.'],
+ choices:[
+  {t:'Szembeszállok a hanggal.',to:64,req:{ci:[20]},fx:{ci:-5,ri:8,par:-8},set:['pg_voice_beaten']},
+  {onTimeout:true,t:'Alkut kötök vele: egy szabad mondat a rendszerben.',to:64,fx:{par:6,ri:-4,net:6},set:['pg_voice_deal']},
+  {t:'Megperdítem a rézérmét.',to:64,req:{ri:[45]},fx:{ri:6,ci:4},echo:'Az érme megáll a levegőben. A hang megbicsaklik.'}
+ ]});
+
+add(64,{title:'A kapu a felszínre',loc:'Belső purgatórium · Küszöb',
+ text:[
+  'A hang elnémul, és a folyosó végén világos kör nyílik. Eső hangja. Az igazi, hideg, büdös eső. A kör szélén a rézérmém áll, mintha valaki odatette volna.',
+  'A küszöbön megértem, hogy ami velem történt, nem bűn és nem betegség. Építmény. Én vagyok a kőműves is.'],
+ choices:[
+  {t:'Kilépek.',to:65,fx:{ci:10,ri:6},set:['purged']}
+ ]});
+
+add(65,{title:'Visszatérés a mélyből',loc:'Belső purgatórium · Felszín',
+ text:function(){
+  var t=['A felszínre érve levegőt kapok, mintha évek óta először. A kezem remeg, de a remegés az enyém.'];
+  if(st.flags.pg_voice_deal)t.push('A karbantartó hangja még ott él a fejem hátuljában, halk alkuval. Egy szabad mondat. Még nem tudom, mire használom.');
+  if(st.flags.pg_voice_beaten)t.push('A hang elhalkult. Nem tűnt el, de már nem nekem parancsol.');
+  return t},
+ choices:[
+  {t:'Visszatérek a Synapse-be.',to:'ret'}
+ ]});
+
+
+/* ---------- Rejtett befejezés (66) ---------- */
+add(66,{type:'end',tag:'Befejezés',title:'Zárlat',loc:'A harmadik út',
+ text:function(){
+  var t=['A konzol negyedik mélyedése eddig sötét volt. Most halkan izzik, és a Mag felmorran, mint egy ébredő állat. A rendszer három kulcsot kér, de beéri kettővel is, ha azok igaziak.'];
+  t.push(st.flags.ev_serial?'Kiveszem a zsebemből a rézérmét: M-0001, a Cég saját mintadarabja, a frissítési csatorna fizikai kulcsa. Beleteszem a mélyedésbe.':'A fizikai kulcs hiányzik, de a Mag felismeri a tenyeremen a rézérme lenyomatát. Kilenc éve hordom, a rendszer ezt elfogadja.');
+  t.push(st.flags.ev_cop?'Lejátszom Kárpáti felvételét. A Cég hangja, amelyet ő a fizetési utasításokban rögzített, kimondja a jóváhagyó mondatot, amelyet a rendszer egyetlen frissítésnél sem kérdez meg kétszer.':'A hangalapú engedélyt a saját hangommal pótolom: a Cég harmincegyszer hallotta tőlem ugyanazt a mondatot, és a rendszer megtanulta.');
+  t.push(st.flags.ally_lilla?'Beírom Lilla kódját, a hátsó ajtót, amelyet egy huszonkét éves nő adott a kezembe, mert hitt nekem.':'A hátsó ajtót nem kaptam senkitől, ezért magam nyitom ki, lassabban és zajosabban, mint kellett volna.');
+  t.push('Nem leleplezem a Céget. Nem veszem át a helyét. Visszaírom a saját hurok-kódomat a központi frissítésbe, és a rendszer a saját parancsával lekapcsolja magát. A Mnemosyne nem bukik el, hanem belső zárlatot kap. A négymillió ember csendesen ébred, néhány emlék hiányzik, néhány hirtelen visszatér, de a szemük szabadon nyílik.');
+  t.push('Én nem tűnök el a Léthében, és nem maradok Rex. Kilépek a klinikából, és elindulok az esőben. Az órák végre nem a Cég ütemére ketyegnek. Nem tudom, hová megyek. Életemben először ez nem baj.');
+  return t}});
+
+var AUX_CI={t:'A falak suttogni kezdenek. Hagyom, hogy beszéljenek…',to:16,ret:true,fx:{par:3}};
+var AUX_RI={t:'A szoba átrendeződik körülöttem, mintha ismerném…',to:17,ret:true};
+
+/* ---------- Segédek ---------- */
+var $=function(s){return document.querySelector(s)};
+var stage=$('#stage'), hud=$('#hud'), modal=$('#modal'), sheet=$('#sheet');
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function pad(n){return n<10?'0'+n:''+n}
+function distort(s,p){
+  if(p<=0)return s;
+  var g='▓░▒#';
+  return s.replace(/[a-záéíóöőúüű]/gi,function(ch){return Math.random()<p?g.charAt(Math.floor(Math.random()*g.length)):ch});
+}
+function fmt(p,i,lvl){
+  var cls='';
+  if(p.indexOf('[SYS]')===0){cls='sys';p=p.slice(5).trim()}
+  else{ if(p.indexOf('— ')===0)cls='dial'; p=distort(p,lvl) }
+  return '<p class="'+cls+'" style="--i:'+i+'">'+esc(p)+'</p>';
+}
+function sceneText(s){return typeof s.text==='function'?s.text():s.text}
+
+/* ---------- Feltételek ---------- */
+function reqInfo(req){
+  var out=[]; if(!req)return out;
+  KEYS.forEach(function(k){
+    var r=req[k]; if(!r)return;
+    if(r[0]!=null)out.push({label:ABBR[k]+' ≥ '+r[0],ok:st[k]>=r[0]});
+    if(r[1]!=null)out.push({label:ABBR[k]+' ≤ '+r[1],ok:st[k]<=r[1]});
+  });
+  if(req.loops){
+    var l=st.v.loops;
+    if(req.loops[0]!=null)out.push({label:'Hurok ≥ '+req.loops[0],ok:l>=req.loops[0]});
+    if(req.loops[1]!=null)out.push({label:'Hurok ≤ '+req.loops[1],ok:l<=req.loops[1]});
+  }
+  if(req.calm){var cl=st.v.calm||0; if(req.calm[1]!=null)out.push({label:'',ok:cl<=req.calm[1]})}
+  if(req.ev)out.push({label:'Bizonyíték ≥ '+req.ev[0],ok:evCount()>=req.ev[0]});
+  (req.has||[]).forEach(function(f){out.push({label:'',ok:!!st.flags[f]})});
+  (req.not||[]).forEach(function(f){out.push({label:'',ok:!st.flags[f]})});
+  return out;
+}
+function buildChoices(s){
+  var out=[];
+  (s.choices||[]).forEach(function(c){
+    var r=reqInfo(c.req), locked=r.some(function(x){return !x.ok});
+    if(c.hide&&locked)return;
+    if(c.vis&&c.vis.k3&&k3count()<c.vis.k3)return;
+    if(c.vis&&((c.vis.has||[]).some(function(f){return !st.flags[f]})||(c.vis.not||[]).some(function(f){return st.flags[f]})))return;
+    out.push({c:c,r:r,locked:locked});
+  });
+  if(s.aux){
+    if(st.ci<=34)out.push({c:AUX_CI,r:[],locked:false,aux:true});
+    if(st.ri<=34)out.push({c:AUX_RI,r:[],locked:false,aux:true});
+  }
+  return out;
+}
+function deathScene(){
+  if(st.ci<=0)return 22;
+  if(st.par>=100)return 23;
+  if(st.ri<=0)return 24;
+  return null;
+}
+
+/* ---------- Mentés ---------- */
+function save(){
+  lsSet(SAVE_KEY,JSON.stringify({v:1,st:st}));
+  var el=$('#saveInd'); el.classList.add('on');
+  clearTimeout(save.t); save.t=setTimeout(function(){el.classList.remove('on')},1400);
+}
+function loadSave(){
+  try{
+    var raw=lsGet(SAVE_KEY); if(!raw)return null;
+    var o=JSON.parse(raw).st;
+    if(!o||!SC[o.scene]||SC[o.scene].type)return null;
+    KEYS.forEach(function(k){if(typeof o[k]!=='number')throw 0});
+    o.flags=o.flags||{}; o.v=o.v||{loops:0}; if(typeof o.v.loops!=='number')o.v.loops=0;
+    return o;
+  }catch(e){return null}
+}
+function getEnds(){try{return JSON.parse(lsGet(END_KEY)||'[]')}catch(e){return[]}}
+function addEnd(id){var e=getEnds(); if(e.indexOf(id)<0){e.push(id);lsSet(END_KEY,JSON.stringify(e))}}
+
+/* ---------- Játékmenet ---------- */
+function applyFx(fx){if(!fx)return;KEYS.forEach(function(k){if(fx[k])st[k]=clamp(st[k]+fx[k])})}
+function setFlags(a){(a||[]).forEach(function(f){st.flags[f]=true})}
+
+function goTo(id,noEnter){
+  st.scene=id;
+  var s=SC[id];
+  if(!noEnter&&s.enter){applyFx(s.enter.fx);setFlags(s.enter.set)}
+  var d=deathScene();
+  if(d&&d!==id){id=d;st.scene=d;s=SC[d]}
+  if(s.type==='end')addEnd(id);
+  if(!s.type)save();
+  render();
+}
+
+function choose(i,timedOut){
+  if(mode!=='play')return;
+  var s=SC[st.scene], list=buildChoices(s), it=list[i];
+  if(!it||it.locked)return;
+  var c=it.c, before={ci:st.ci,ri:st.ri,net:st.net,par:st.par};
+  if(st.dls)delete st.dls[st.scene];
+  if(c.ret)st.ret=st.scene;
+  applyFx(c.fx); setFlags(c.set);
+  if(c.inc)Object.keys(c.inc).forEach(function(k){st.v[k]=(st.v[k]||0)+c.inc[k]});
+  st.echo=(timedOut?'Az idő lejárt. A döntést a rendszer hozta meg helyettem. ':'')+(c.echo||''); st.steps++;
+  var target=c.to==='ret'?(st.ret||3):c.to, noEnter=c.to==='ret';
+  var d=deathScene(); if(d){target=d;noEnter=true}
+  goTo(target,noEnter);
+  var deltas={}; KEYS.forEach(function(k){deltas[k]=st[k]-before[k]});
+  updateHud(deltas);
+}
+
+/* ---------- HUD ---------- */
+function buildHud(){
+  hud.innerHTML=STATS.map(function(s){
+    return '<div class="meter m-'+s.k+'" data-k="'+s.k+'" data-act="stat" role="button" tabindex="0" title="'+esc(s.d)+'"><div class="mh"><span class="ab">'+s.ab+'</span><span class="nm">'+s.nm+
+      '</span><span class="val"></span><span class="delta"></span></div><div class="bar"><i></i></div></div>';
+  }).join('');
+}
+function updateHud(deltas){
+  if(!st)return;
+  KEYS.forEach(function(k){
+    var m=hud.querySelector('[data-k="'+k+'"]');
+    m.querySelector('.val').textContent=st[k]+(k==='ci'?'%':'');
+    m.querySelector('.bar i').style.width=st[k]+'%';
+    var crit=(k==='ci'&&st.ci<=34)||(k==='ri'&&st.ri<=34)||(k==='par'&&st.par>=60);
+    m.classList.toggle('crit',crit);
+    var dl=m.querySelector('.delta'), nd=dl.cloneNode(false);
+    var d=deltas&&deltas[k];
+    if(d){nd.textContent=(d>0?'+':'−')+Math.abs(d);nd.className='delta '+(((k==='par')?d<0:d>0)?'good':'bad')}
+    dl.parentNode.replaceChild(nd,dl);
+  });
+  document.body.classList.toggle('lowci',st.ci<=34);
+  document.body.classList.toggle('lowri',st.ri<=34);
+  document.documentElement.style.setProperty('--par',(st.par/100).toFixed(2));
+}
+
+/* ---------- Nézetek ---------- */
+function renderInner(){
+  hud.hidden=(mode!=='play');
+  if(mode==='title'){document.documentElement.style.setProperty('--par','0');document.body.classList.remove('lowci','lowri');return renderTitle()}
+  updateHud(null);
+  var s=SC[st.scene];
+  if(s.type)return renderEnd(s);
+  var lvl=(cfg.glitch&&st.ri<=34)?0.012+(35-st.ri)/35*0.05:0, i=0, html='', hinted=false;
+  function hint(f,t){if(!st.flags[f]){st.flags[f]=true;hinted=true;html+=fmt('[SYS] '+t,i++,0)}}
+  html+='<div class="kick"><span>Jelenet '+pad(s.id)+'</span><span>'+esc(s.loc)+'</span></div>';
+  html+='<h1 tabindex="-1" id="sceneTitle">'+esc(s.title)+'</h1><div class="story">';
+  if(st.echo){html+='<p class="echo" style="--i:0">› '+esc(st.echo)+'</p>';i=1}
+  sceneText(s).forEach(function(p){html+=fmt(p,i++,lvl)});
+  if(st.par>=60)html+=fmt('[SYS] Mnemosyne-monitor: anomália a restaurátor-szálon. Követési valószínűség: '+st.par+'%.',i++,0);
+  if(st.ci<=34)html+=fmt('[SYS] Kognitív integritás kritikus. Percepciós zaj észlelve.',i++,0);
+  if(st.ri<=34)html+=fmt('[SYS] Valóság-horgony instabil. Emlékforrás-ellenőrzés sikertelen.',i++,0);
+  if(st.ri<=34)hint('hint_ri','Magyarázat: a Valóság-Index kritikus, ezért torzul a szöveg. Emelheted a rézérme-horgonnyal, az igazság elfogadásával és tárgyi bizonyítékkal. A Beállításokban kikapcsolható.');
+  if(st.ci<=34)hint('hint_ci','Magyarázat: a Kognitív Integritás kritikus. Bátor lehetőségek zárulnak le, suttogás jelentkezik, és a gombok villogni kezdenek. Pihenéssel és a horgonnyal emelhető.');
+  if(st.par>=60)hint('hint_par','Magyarázat: a Paranoia nem csökken magától. Százon a Cég elkap. Az alsó sáv színe mutatja, mennyire figyelnek.');
+  if(s.timer&&cfg.timer!=='off')hint('hint_timer','Időzített jelenet: ha lejár az idő, a rendszer dönt helyetted. A Beállításokban kikapcsolható vagy kétszeresre hosszabbítható.');
+  if(hinted)save();
+  if(st.v.loops>=1)html+=fmt('[SYS] Hurok-számláló: '+st.v.loops+'. Emlékciklus-integritás romlik.',i++,0);
+  if(st.scene>=56&&st.scene<=65)html+=fmt('[SYS] Belső réteg: külső vezérlés aktív. A szál már nem a tiéd.',i++,0);
+  html+='</div>';
+  var list=buildChoices(s);
+  html+='<div class="choices" style="--d:'+(i*0.26+0.1).toFixed(2)+'s">';
+  list.forEach(function(it,n){
+    var shown=distort(it.c.t,it.aux?0:lvl);
+    var tags=it.r.filter(function(x){return x.label}).map(function(x){return '<span class="tag'+(x.ok?'':' ko')+'">'+(x.ok?'':'zárolva · ')+esc(x.label)+'</span>'}).join('');
+    html+='<button class="choice'+(it.locked?' locked':'')+(it.aux?' aux':'')+'" data-act="choice" data-i="'+n+'" aria-label="'+esc(it.c.t)+'"'+(it.locked?' aria-disabled="true"':'')+'>'+
+      '<span class="key">'+(n+1)+'</span><span class="ctext"><span class="ct" data-true="'+esc(it.c.t)+'" data-shown="'+esc(shown)+'">'+esc(shown)+'</span>'+(tags?'<span class="tags">'+tags+'</span>':'')+'</span></button>';
+  });
+  html+='</div>';
+  stage.innerHTML=html;
+  window.scrollTo(0,0);
+  var h=$('#sceneTitle'); if(h)h.focus({preventScroll:true});
+}
+
+function endsPips(){
+  var e=getEnds();
+  return '<div class="pips">'+Object.keys(ENDINGS).map(function(id){
+    var on=e.indexOf(+id)>=0;
+    return '<span class="pip'+(on?' on':'')+'">'+(on?esc(ENDINGS[id]):'???')+'</span>';
+  }).join('')+'</div>';
+}
+
+function renderTitle(){
+  var has=!!loadSave();
+  var legend=STATS.map(function(s){return '<div><b style="color:var(--'+(s.k==='ci'?'cyan':s.k==='ri'?'amber':s.k==='net'?'net':'magenta')+')">'+s.ab+' // '+esc(s.nm)+'</b>'+esc(s.d)+'</div>'}).join('');
+  stage.innerHTML='<div class="title-box">'+
+    '<div class="kick"><span>Új-Budapest · 2089</span><span>Interaktív noir</span></div>'+
+    '<h2 class="mega" style="margin-top:14px">Mnemosyne</h2>'+
+    '<div class="sub">A Memória-építészet</div>'+
+    '<p>Emlék-restaurátor vagy: kómás és haldokló emberek elméjébe csatlakozol, hogy kibogozd, amit utoljára láttak. Most egy meggyilkolt igazgató ügye vár rád, és egy gyilkos, aki négyezer elme közepén ölt.</p>'+
+    '<p>Minden emlék, amit megérintesz, téged is megérint.</p>'+
+    '<div class="actions">'+(has?'<button class="btn primary" data-act="continue">Folytatás</button>':'')+
+    '<button class="btn'+(has?(armed?' warn':''):' primary')+'" data-act="new">'+(has&&armed?'Biztos? A mentés törlődik':'Új játék')+'</button></div>'+
+    '<div class="legend">'+legend+'</div>'+
+    '<div class="pips" style="margin-bottom:8px">Befejezések</div>'+endsPips()+
+    '<p class="fine">A Napló gyűjti a nyomokat, a mérőkre koppintva magyarázatot kapsz.</p></div>';
+  window.scrollTo(0,0);
+}
+
+function renderEnd(s){
+  var over=s.type==='over', e=getEnds().length;
+  var lvl=0, html='';
+  html+='<div class="kick"><span>Jelenet '+pad(s.id)+'</span><span>'+esc(s.loc)+'</span></div>';
+  html+='<h1 tabindex="-1" id="sceneTitle" style="margin-top:14px">'+esc(s.title)+'</h1>';
+  html+='<div class="banner'+(over?' over':'')+'">'+(over?'Rendszerhiba // játék vége':'Befejezés '+e+' / '+ENDN)+'</div><div class="story" style="margin-top:22px">';
+  sceneText(s).forEach(function(p,i){html+=fmt(p,i,lvl)});
+  html+='</div>';
+  html+='<div class="sumrow"><div class="sum">CI<b>'+st.ci+'%</b></div><div class="sum">RI<b>'+st.ri+'</b></div><div class="sum">NET<b>'+st.net+'</b></div><div class="sum">PAR<b>'+st.par+'</b></div><div class="sum">Nyomok<b>'+evCount()+' / '+EV_KEYS.length+'</b></div><div class="sum">Hurkok<b>'+st.v.loops+'</b></div></div>';
+  if(!over)html+=endsPips();
+  html+='<div class="actions"><button class="btn primary" data-act="retry">'+(over?'Utolsó ellenőrzőpont':'Vissza az utolsó döntéshez')+'</button><button class="btn" data-act="new2">Új játék</button><button class="btn" data-act="menu">Főmenü</button></div>';
+  stage.innerHTML=html;
+  window.scrollTo(0,0);
+  var h=$('#sceneTitle'); if(h)h.focus({preventScroll:true});
+}
+
+
+/* ---------- Glitch, időzítő, SYS-sáv, hang ---------- */
+function sysTier(){
+  if(!st||mode!=='play')return 0;
+  var inPg=st.scene>=56&&st.scene<=65;
+  var score=Math.max(st.par,Math.min(75,(st.v.loops||0)*25),inPg?70:0);
+  if(score>=90||(inPg&&st.ci<=25))return 3;
+  if(score>=70)return 2;
+  if(score>=40)return 1;
+  return 0;
+}
+function sysRefresh(){
+  var bar=$('#sysbar'), cl=document.body.classList;
+  ['sys-t0','sys-t1','sys-t2','sys-t3'].forEach(function(c){cl.remove(c)});
+  var play=(mode==='play'&&st&&!SC[st.scene].type);
+  if(!play){bar.hidden=true;cl.add('sys-t0');return}
+  var t=sysTier(); cl.add('sys-t'+t); bar.hidden=false;
+  var base=['[SYS] kapcsolat stabil · restaurátor-szál aktív','[SYS] külső monitor csatlakozott a szálhoz','[SYS] külső irányítás átveszi a szálat','[SYS] ▓▓▓ irányítás átvéve ▓▓▓ ne ellenkezz'][t];
+  bar.textContent=base+' · PAR '+st.par+(st.v.loops?' · hurok #'+st.v.loops:'')+((st.scene>=56&&st.scene<=65)?' · belső réteg':'');
+}
+
+var glT=null;
+function glitchStop(){if(glT){clearInterval(glT);glT=null}document.body.classList.remove('glitch')}
+function glitchSetup(){
+  glitchStop();
+  if(mode!=='play'||!st||!cfg.glitch||reduced)return;
+  var sev=Math.max((35-st.ci)/35,(35-st.ri)/35);
+  if(sev<=0)return;
+  document.body.classList.add('glitch');
+  var btns=[].slice.call(stage.querySelectorAll('.choice'));
+  btns.forEach(function(b){b.style.setProperty('--gd',(Math.random()*3).toFixed(2)+'s')});
+  glT=setInterval(function(){
+    var cand=btns.filter(function(b){return b.isConnected&&!b.matches(':hover,:focus-visible')});
+    if(!cand.length)return;
+    var b=cand[Math.floor(Math.random()*cand.length)], ct=b.querySelector('.ct'); if(!ct)return;
+    var sh=ct.getAttribute('data-shown');
+    if(Math.random()<.6)ct.textContent=distort(sh,.12+Math.min(1,sev)*.3);else ct.style.opacity='.12';
+    setTimeout(function(){ct.textContent=b.matches(':hover,:focus-visible')?ct.getAttribute('data-true'):sh;ct.style.opacity=''},240);
+  },1500);
+}
+function showTrue(ev){var b=ev.target.closest&&ev.target.closest('.choice');if(!b)return;var c=b.querySelector('.ct');if(c)c.textContent=c.getAttribute('data-true')}
+function showShown(ev){var b=ev.target.closest&&ev.target.closest('.choice');if(!b)return;var c=b.querySelector('.ct');if(c)c.textContent=c.getAttribute('data-shown')}
+
+var tmT=null;
+function stopTimer(){if(tmT){clearInterval(tmT);tmT=null}}
+function pickTimeout(){
+  if(mode!=='play'||!st)return;
+  var s=SC[st.scene]; if(!s||!s.timer)return;
+  var list=buildChoices(s), idx=-1, i;
+  for(i=0;i<list.length;i++){if(list[i].c.onTimeout&&!list[i].locked){idx=i;break}}
+  if(idx<0)for(i=0;i<list.length;i++){if(list[i].aux){idx=i;break}}
+  if(idx<0)for(i=list.length-1;i>=0;i--){if(!list[i].locked){idx=i;break}}
+  if(idx>=0)choose(idx,true);
+}
+function tickTimer(){
+  var el=stage.querySelector('.timer'); if(!el||mode!=='play'||!st){stopTimer();return}
+  var dl=st.dls&&st.dls[st.scene]; if(!dl){stopTimer();return}
+  var now=Date.now();
+  if(now>=dl.end){stopTimer();pickTimeout();return}
+  var span=Math.max(1,dl.end-(dl.t0||dl.start)), rem=dl.end-now, f=Math.max(0,Math.min(1,rem/span));
+  el.querySelector('i').style.width=(f*100)+'%';
+  el.classList.toggle('mid',f<.5); el.classList.toggle('low',f<.25);
+  el.querySelector('.ts').textContent=Math.ceil(rem/1000)+' mp';
+}
+function setupTimer(){
+  stopTimer();
+  var old=stage.querySelector('.timer'); if(old)old.remove();
+  if(mode!=='play'||!st)return;
+  var s=SC[st.scene]; if(!s||s.type||!s.timer||cfg.timer==='off')return;
+  if(!st.dls)st.dls={};
+  if(!st.dls[st.scene]){
+    var txt=sceneText(s).join(' ').length, now=Date.now(), read=Math.min(12000,txt*14+1000);
+    st.dls[st.scene]={t0:now,end:now+read+s.timer.sec*1000*(cfg.timer==='long'?2:1)};
+    save();
+  }
+  if(Date.now()>=st.dls[st.scene].end){pickTimeout();return}
+  var box=stage.querySelector('.choices'); if(!box)return;
+  var el=document.createElement('div'); el.className='timer'; el.setAttribute('role','timer');
+  el.innerHTML='<div class="tl"><span>Döntési idő</span><span class="ts"></span></div><div class="tbar"><i></i></div>';
+  box.insertBefore(el,box.firstChild);
+  tickTimer(); tmT=setInterval(tickTimer,150);
+}
+
+var AU={ctx:null,n:null};
+function audioStart(){
+  if(AU.ctx||!cfg.sound)return;
+  var C=window.AudioContext||window.webkitAudioContext; if(!C)return;
+  try{
+    var ctx=new C(); AU.ctx=ctx;
+    var master=ctx.createGain(); master.gain.value=0; master.connect(ctx.destination);
+    var lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=180; lp.connect(master);
+    var o1=ctx.createOscillator(); o1.type='sawtooth'; o1.frequency.value=48;
+    var o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=72.5;
+    var g1=ctx.createGain(); g1.gain.value=.5; var g2=ctx.createGain(); g2.gain.value=.35;
+    o1.connect(g1); g1.connect(lp); o2.connect(g2); g2.connect(lp);
+    var buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    var ns=ctx.createBufferSource(); ns.buffer=buf; ns.loop=true;
+    var nf=ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=900; nf.Q.value=.8;
+    var ng=ctx.createGain(); ng.gain.value=0; ns.connect(nf); nf.connect(ng); ng.connect(master);
+    o1.start(); o2.start(); ns.start();
+    AU.n={master:master,lp:lp,o2:o2,ng:ng};
+  }catch(e){AU.ctx=null;AU.n=null}
+}
+function audioUpdate(){
+  if(!AU.ctx||!AU.n)return;
+  var on=cfg.sound&&mode==='play'&&!document.hidden, t=sysTier(), n=AU.n, now=AU.ctx.currentTime;
+  n.master.gain.setTargetAtTime(on?0.05+t*0.02:0,now,.4);
+  n.lp.frequency.setTargetAtTime(160+t*140,now,.5);
+  n.o2.frequency.setTargetAtTime(72.5+t*9,now,.8);
+  n.ng.gain.setTargetAtTime(on&&t>=2?0.04*(t-1):0,now,.6);
+  if(on&&AU.ctx.state==='suspended')AU.ctx.resume();
+}
+
+function render(){
+  stopTimer(); glitchStop();
+  renderInner();
+  var play=(mode==='play'&&st&&SC[st.scene]&&!SC[st.scene].type);
+  if(play){glitchSetup();setupTimer()}
+  sysRefresh(); audioUpdate();
+}
+function applyCfg(){
+  saveCfg();
+  if(cfg.sound&&!AU.ctx)audioStart();
+  glitchSetup(); setupTimer(); sysRefresh(); audioUpdate();
+}
+var TIPS={
+  ci:'Emeli: a pihenőkert, az önmegbocsátás, a horgony-rituálé. Csökkenti: traumák, erőszak, a kórus, törések. Nullán a tudat összeomlik.',
+  ri:'Emeli: a rézérme-horgony, az igazság elfogadása, tárgyi bizonyíték. Csökkenti: hamis emlékek, a kórus, a konyha csapdái. Nullán elveszted a valóságot.',
+  net:'Emeli: hamis kulcs, feltörések, szövetséges hackerek. Megnyit: rejtett fájlokat, rövidítéseket és a rendszerátvételt.',
+  par:'Növeli: feltörések, lebukás, ügynökök. Csökkenti: színlelés, alkuk, nyugalom. Százon a Cég elkap.'};
+function openStat(k){
+  if(!st)return;
+  var d=STATS.filter(function(x){return x.k===k})[0]; if(!d)return;
+  sheet.innerHTML='<div class="row"><h2 id="mt">'+d.ab+' // '+esc(d.nm)+'</h2><button class="btn" data-act="close">Bezár</button></div>'+
+   '<div class="ev"><b>Jelenlegi érték: '+st[k]+(k==='ci'?'%':'')+'</b>'+esc(d.d)+'</div><div class="ev">'+esc(TIPS[k])+'</div>';
+  modal.hidden=false; var b=sheet.querySelector('button'); if(b)b.focus();
+}
+function openSettings(){
+  function seg(k,opts){return '<div class="seg">'+opts.map(function(o){return '<button class="btn'+(cfg[k]===o[0]?' on':'')+'" data-act="cfg" data-k="'+k+'" data-v="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div>'}
+  var h='<div class="row"><h2 id="mt">Beállítások</h2><button class="btn" data-act="close">Bezár</button></div>'+
+   '<div class="setrow"><span>Glitch-effektek<small>Kritikus (35 alatti) CI vagy RI mellett a szöveg betűi torzulnak, a gombok lebegnek és villognak. Ha egy gomb fölé mész, vagy fókuszálsz rá, mindig az igazi szöveget mutatja.</small></span>'+seg('glitch',[[true,'Be'],[false,'Ki']])+'</div>'+
+   '<div class="setrow"><span>Időzített döntések<small>Néhány feszült jelenetben lejár az idő, és a rendszer választ helyetted. A hosszabb mód kétszeres időt ad.</small></span>'+seg('timer',[['off','Ki'],['normal','Normál'],['long','Hosszabb']])+'</div>'+
+   '<div class="setrow"><span>Hangulat-hang<small>Mély zúgás, amely a paranoiával erősödik. Csak kattintás után indul.</small></span>'+seg('sound',[[true,'Be'],[false,'Ki']])+'</div>'+
+   '<h3>Tudnivalók</h3>'+
+   [['Mérők','Koppints egy mérőre (CI, RI, NET, PAR) a magyarázatért és a tippekért.'],
+    ['Torzult betűk','Alacsony Valóság-Indexnél ▓ és ░ jelek jelennek meg a szövegben. Ez a játék része, nem hiba.'],
+    ['Zárolt opciók','A szaggatott keretű választásokhoz feltétel kell, például NET ≥ 45. A címke mutatja, mi hiányzik.'],
+    ['Alsó [SYS] sáv','A színe jelzi, mennyire veszi át az irányítást a külvilág: cián, borostyán, vörös, vibráló lila.'],
+    ['Időzítő','Egyes feszült jelenetekben fogyó csík látszik. Lejáratkor a rendszer választ helyetted.'],
+    ['Mentés','Minden döntés után automatikus. A Menü gombbal bármikor kiléphetsz, és a Folytatással visszatérhetsz.']
+   ].map(function(x){return '<div class="ev"><b>'+x[0]+'</b>'+x[1]+'</div>'}).join('');
+  sheet.innerHTML=h; modal.hidden=false;
+  var b=sheet.querySelector('button'); if(b)b.focus();
+}
+
+function openJournal(){
+  var e=getEnds();
+  var h='<div class="row"><h2 id="mt">Nyomozati napló</h2><button class="btn" data-act="close">Bezár</button></div>';
+  if(st){
+    h+='<h3>Bizonyítékok · '+evCount()+' / '+EV_KEYS.length+'</h3>';
+    EV_KEYS.forEach(function(k){
+      h+=st.flags[k]?'<div class="ev"><b>'+esc(EV[k][0])+'</b>'+esc(EV[k][1])+'</div>':'<div class="ev miss">▒▒▒ ismeretlen nyom</div>';
+    });
+    h+='<h3>Állapot</h3><div class="ev">Meghozott döntések: '+st.steps+'. Bejárt hurkok: '+st.v.loops+'. A leleplezéshez legalább négy nyom és RI ≥ 45 kell, az átvételhez NET ≥ 60.</div>';
+    var kj=k3count();
+    if(kj>0)h+='<div class="ev"><b>Negyedik út</b>'+kj+' / 3 kulcs a Mag sötét mélyedéséhez. Kettő már megnyitja.</div>';
+  }else h+='<div class="ev miss">▒▒▒ nincs aktív nyomozás</div>';
+  h+='<h3>Befejezések · '+e.length+' / '+ENDN+'</h3>'+endsPips();
+  sheet.innerHTML=h; modal.hidden=false;
+  var b=sheet.querySelector('button'); if(b)b.focus();
+}
+function closeModal(){modal.hidden=true}
+
+function startNew(){st=newState();mode='play';armed=false;goTo(1)}
+
+/* ---------- Események ---------- */
+document.addEventListener('click',function(ev){
+  var t=ev.target.closest('[data-act]');
+  if(!t){if(ev.target===modal)closeModal();return}
+  var a=t.getAttribute('data-act');
+  if(cfg.sound&&!AU.ctx){audioStart();audioUpdate()}
+  if(a==='choice')choose(+t.getAttribute('data-i'));
+  else if(a==='journal')openJournal();
+  else if(a==='close')closeModal();
+  else if(a==='settings')openSettings();
+  else if(a==='stat')openStat(t.getAttribute('data-k'));
+  else if(a==='cfg'){var k=t.getAttribute('data-k'),v=t.getAttribute('data-v');cfg[k]=(k==='timer')?v:(v==='true');applyCfg();openSettings()}
+  else if(a==='menu'){closeModal();mode='title';armed=false;render()}
+  else if(a==='continue'){var o=loadSave();if(o){st=o;mode='play';st.echo='';render()}}
+  else if(a==='new'){
+    if(loadSave()&&!armed){armed=true;render()}else startNew();
+  }
+  else if(a==='new2')startNew();
+  else if(a==='retry'){var o2=loadSave();if(o2){st=o2;st.echo='';mode='play';render()}else startNew()}
+});
+document.addEventListener('click',function(ev){ if(cfg.sound&&!AU.ctx&&!ev.target.closest('[data-act]')){audioStart();audioUpdate()} });
+stage.addEventListener('mouseover',showTrue); stage.addEventListener('focusin',showTrue);
+stage.addEventListener('mouseout',showShown); stage.addEventListener('focusout',showShown);
+document.addEventListener('visibilitychange',function(){audioUpdate();tickTimer()});
+document.addEventListener('keydown',function(ev){
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.classList&&ev.target.classList.contains('meter')){ev.preventDefault();openStat(ev.target.getAttribute('data-k'));return}
+  if(ev.key==='Escape'&&!modal.hidden){closeModal();return}
+  if(mode!=='play'||!modal.hidden||ev.ctrlKey||ev.metaKey||ev.altKey)return;
+  if(/^[1-9]$/.test(ev.key))choose(+ev.key-1);
+});
+
+/* ---------- Eső (háttér) ---------- */
+(function(){
+  var cv=$('#rain'),cx=cv.getContext('2d'),W=0,H=0,drops=[],raf=0;
+  var still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var col=getComputedStyle(document.documentElement).getPropertyValue('--cyan').trim()||'#27e6ff';
+  function size(){
+    W=cv.width=innerWidth;H=cv.height=innerHeight;
+    var n=Math.min(150,Math.floor(W/8));
+    drops=[];for(var i=0;i<n;i++)drops.push({x:Math.random()*W,y:Math.random()*H,l:8+Math.random()*18,v:6+Math.random()*9});
+  }
+  function frame(){
+    cx.clearRect(0,0,W,H);cx.globalAlpha=.16;cx.strokeStyle=col;cx.lineWidth=1;cx.beginPath();
+    for(var i=0;i<drops.length;i++){
+      var d=drops[i];cx.moveTo(d.x,d.y);cx.lineTo(d.x-d.l*.18,d.y+d.l);
+      if(!still){d.y+=d.v;if(d.y>H){d.y=-20;d.x=Math.random()*W}}
+    }
+    cx.stroke();
+    if(!still)raf=requestAnimationFrame(frame);
+  }
+  size();frame();
+  addEventListener('resize',function(){size();if(still)frame()});
+  document.addEventListener('visibilitychange',function(){
+    if(still)return;
+    if(document.hidden)cancelAnimationFrame(raf);else frame();
+  });
+})();
+
+/* ---------- Indítás ---------- */
+buildHud();
+render();
+})();
+</script>
+
+</body></html>
